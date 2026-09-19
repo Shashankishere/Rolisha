@@ -1,0 +1,22 @@
+project_id = "masnydtiofkfcwhfhokv"
+
+# Google sign-in ("Continue with Google" on /auth) uses Supabase Auth's
+# built-in Google OAuth provider via supabase.auth.signInWithOAuth({ provider:
+# "google" }) — see src/routes/auth.tsx. That call is already correct; the
+# "Unsupported provider: missing OAuth secret" error is returned by Supabase
+# Auth itself, not by this app, when the Google provider has no client
+# secret configured on the backend.
+#
+# This block documents the required configuration for local `supabase start`
+# parity. It does NOT configure the hosted project — the OAuth client
+# ID/secret must be set in the Supabase Dashboard (Authentication > Sign In /
+# Providers > Google) or in your hosting provider's Supabase backend
+# settings. Never commit the actual secret here or in any VITE_ / client-side
+# env var. Supabase reads it from the dashboard/server-side config only.
+[auth.external.google]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+# Must match a redirect URI registered on the Google Cloud OAuth client:
+# https://<project-ref>.supabase.co/auth/v1/callback
+redirect_uri = ""
