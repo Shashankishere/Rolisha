@@ -486,7 +486,7 @@ Authentication, authorization, database policies, and server-side secrets are tr
 
 Future development may include:
 
-* Deeper job-market analytics
+* Deeper job market analytics
 * More career paths
 * Additional job-data providers
 * Expanded learning resources
