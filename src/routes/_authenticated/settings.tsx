@@ -15,7 +15,7 @@ import { currencySymbol, formatSalary, WORK_MODE_LABEL, type WorkMode } from "@/
 import { deleteAccount, updateProfile } from "@/lib/settings.functions";
 import { getWorkspace } from "@/lib/me.functions";
 import { getSubscriptionStatus } from "@/lib/subscription.functions";
-import { hasPasswordAuth, newPasswordSchema } from "@/lib/auth/password-reset";
+import { changePasswordCore, hasPasswordAuth } from "@/lib/auth/password-reset";
 
 const workspaceQuery = queryOptions({ queryKey: ["workspace"], queryFn: () => getWorkspace() });
 const subscriptionQuery = queryOptions({
@@ -242,13 +242,16 @@ function SettingsPage() {
  * Security > Password. Only rendered as an active form for a user who
  * actually has an email/password identity (see `hasPasswordAuth`) --
  * someone who signed up exclusively through Google sees an explanatory
- * note instead of a form that assumes a password already exists. Confirms
- * the current password by re-authenticating with it (Supabase Auth has no
- * separate "verify current password" call) before calling the one
- * supported password-update path, `supabase.auth.updateUser({ password })`
- * -- the same call `reset-password.tsx` already uses. The password itself
- * never touches the server (Supabase Auth handles it client-side over
- * HTTPS) and is never logged.
+ * note instead of a form that assumes a password already exists.
+ *
+ * The actual flow (validate -> re-verify the current password -> update to
+ * the new one) lives in `changePasswordCore` (lib/auth/password-reset.ts),
+ * extracted so it has direct regression-test coverage rather than only
+ * being exercisable by rendering this page. This component's job is just
+ * form state and presenting whatever result that function returns. Neither
+ * password ever touches this app's own server -- both calls go straight
+ * from the browser to Supabase Auth over HTTPS -- and neither is ever
+ * logged.
  */
 function ChangePasswordSection({ email }: { email: string | null }) {
   const { user } = useAuth();
@@ -268,40 +271,18 @@ function ChangePasswordSection({ email }: { email: string | null }) {
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!email) {
-      toast.error("Your account has no email on file, so your password can't be verified.");
-      return;
-    }
-    if (!currentPassword) {
-      toast.error("Enter your current password.");
-      return;
-    }
-    const parsed = newPasswordSchema.safeParse({ password: newPassword, confirmPassword });
-    if (!parsed.success) {
-      toast.error(parsed.error.issues[0]?.message ?? "Check your new password.");
-      return;
-    }
-
     setBusy(true);
     try {
-      // Verify the current password by re-authenticating with it -- this
-      // never signs the user out or drops their existing session; it just
-      // confirms the credential and refreshes the same session's tokens,
-      // exactly like typing your password again on the sign-in form would.
-      const { error: verifyError } = await supabase.auth.signInWithPassword({
+      const result = await changePasswordCore(supabase.auth, {
         email,
-        password: currentPassword,
+        currentPassword,
+        newPassword,
+        confirmPassword,
       });
-      if (verifyError) {
-        toast.error("Current password is incorrect.");
+      if (!result.ok) {
+        toast.error(result.message);
         return;
       }
-
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: parsed.data.password,
-      });
-      if (updateError) throw updateError;
-
       toast.success("Password updated.");
       reset();
       setOpen(false);

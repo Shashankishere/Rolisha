@@ -17,6 +17,23 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_RESULTS_PER_PAGE = 50; // Adzuna's documented per-page ceiling.
 const HARD_MAX_JOBS = 100; // Safety ceiling regardless of what a caller requests.
 
+// --- Retry/backoff for transient per-request failures --------------------
+// A 503/502/500 or 429 from Adzuna, or a network blip/timeout, is usually a
+// momentary upstream hiccup, not a real outage -- the very next request a
+// second later often succeeds. Previously a SINGLE such response failed the
+// entire scheduled sync immediately (this is the actual root cause behind
+// "server_error: Adzuna server error (HTTP 503)" showing up for automated
+// ingestion: one transient blip, zero retries). Genuinely bad requests
+// (401/403/malformed response) are NOT retried -- retrying those would
+// never succeed and would only waste the sync's time budget.
+const MAX_FETCH_ATTEMPTS = 3; // 1 initial attempt + up to 2 retries per page.
+const RETRY_BASE_DELAY_MS = 500;
+const RETRY_MAX_DELAY_MS = 4_000;
+/** Upper bound on how long a single retry waits even if Adzuna's own
+ * `Retry-After` header asks for longer -- a scheduled sync has a bounded
+ * time budget and must not be starved by one slow page. */
+const RETRY_AFTER_CAP_MS = 8_000;
+
 /**
  * Raised for anything that stops ingestion for the whole batch (bad
  * credentials, rate limiting, provider outage, network/timeout). Never
@@ -134,7 +151,14 @@ async function fetchWithTimeout(url: string): Promise<Response> {
   }
 }
 
-function throwForHttpStatus(status: number): never {
+/** `attempts` is only passed once retries have actually been exhausted for a
+ * transient status, so the message can say so -- this is how a genuine,
+ * persistent upstream outage is distinguished (in logs and in
+ * `job_sync_runs.error_message`) from a bug in this application: a message
+ * ending "after 3 attempts" means Adzuna itself was unavailable across
+ * several real, spaced-out requests, not that we never tried. */
+function throwForHttpStatus(status: number, attempts?: number): never {
+  const attemptSuffix = attempts && attempts > 1 ? ` after ${attempts} attempts` : "";
   if (status === 401) {
     throw new AdzunaProviderError(
       "unauthorized",
@@ -150,16 +174,62 @@ function throwForHttpStatus(status: number): never {
   if (status === 429) {
     throw new AdzunaProviderError(
       "rate_limited",
-      "Adzuna rate limit exceeded (HTTP 429). Try again later.",
+      `Adzuna rate limit exceeded (HTTP 429)${attemptSuffix}. Try again later.`,
     );
   }
   if (status >= 500) {
-    throw new AdzunaProviderError("server_error", `Adzuna server error (HTTP ${status}).`);
+    throw new AdzunaProviderError(
+      "server_error",
+      `Adzuna server error (HTTP ${status})${attemptSuffix}.`,
+    );
   }
   throw new AdzunaProviderError(
     "invalid_response",
     `Adzuna returned an unexpected status (HTTP ${status}).`,
   );
+}
+
+/** 429 and every 5xx are treated as transient (worth retrying); everything
+ * else (401/403/other 4xx) is not -- retrying an auth or client error would
+ * never succeed and would only delay reporting the real problem. */
+function isTransientHttpStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+/** Network failures and timeouts are as transient as a 5xx -- they're the
+ * same class of "this specific attempt didn't work, the next one might."
+ * `missing_credentials` / `invalid_response` are never retried: retrying a
+ * response this application doesn't understand, or a request it never had
+ * valid credentials for, wastes the retry budget on something retrying
+ * cannot fix. */
+function isTransientAdzunaError(error: unknown): error is AdzunaProviderError {
+  return (
+    error instanceof AdzunaProviderError &&
+    (error.code === "network_error" || error.code === "timeout")
+  );
+}
+
+/** Adzuna (like most APIs) sends `Retry-After` as delta-seconds, not an
+ * HTTP-date; a non-numeric or missing header falls back to our own backoff
+ * schedule instead of blocking the retry. */
+function parseRetryAfterMs(response: Response): number | null {
+  const header = response.headers.get("retry-after");
+  if (!header) return null;
+  const seconds = Number(header);
+  return Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : null;
+}
+
+function computeBackoffDelayMs(attempt: number, retryAfterMs: number | null): number {
+  if (retryAfterMs !== null) return Math.min(retryAfterMs, RETRY_AFTER_CAP_MS);
+  // Exponential backoff (500ms, 1000ms, 2000ms, ...) with up to +500ms of jitter,
+  // capped, so retries from concurrent syncs don't all land on Adzuna at once.
+  const exponential = RETRY_BASE_DELAY_MS * 2 ** (attempt - 1);
+  const jitter = Math.random() * RETRY_BASE_DELAY_MS;
+  return Math.min(exponential + jitter, RETRY_MAX_DELAY_MS);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class AdzunaJobSourceAdapter implements JobSourceAdapter {
@@ -207,6 +277,45 @@ export class AdzunaJobSourceAdapter implements JobSourceAdapter {
     return url.toString();
   }
 
+  /** Fetches one page, retrying a transient failure (429/5xx, network error,
+   * timeout) with exponential backoff up to MAX_FETCH_ATTEMPTS. A
+   * non-transient failure (401/403/malformed response) still throws on the
+   * very first attempt, exactly as before -- retrying those would only
+   * delay reporting a real, non-recoverable problem. Never logs the request
+   * URL (it carries app_id/app_key as query params); only the page,
+   * country, attempt count, and status/error class are logged. */
+  private async fetchPageWithRetry(page: number, resultsPerPage: number): Promise<Response> {
+    for (let attempt = 1; attempt <= MAX_FETCH_ATTEMPTS; attempt++) {
+      let response: Response;
+      try {
+        response = await fetchWithTimeout(this.buildUrl(page, resultsPerPage));
+      } catch (error) {
+        if (!isTransientAdzunaError(error) || attempt === MAX_FETCH_ATTEMPTS) throw error;
+        const delay = computeBackoffDelayMs(attempt, null);
+        console.warn(
+          `[adzuna] transient ${error.code} on page=${page} country=${this.country} ` +
+            `attempt=${attempt}/${MAX_FETCH_ATTEMPTS}, retrying in ${Math.round(delay)}ms`,
+        );
+        await sleep(delay);
+        continue;
+      }
+
+      if (response.ok) return response;
+      if (!isTransientHttpStatus(response.status) || attempt === MAX_FETCH_ATTEMPTS) {
+        throwForHttpStatus(response.status, attempt);
+      }
+      const delay = computeBackoffDelayMs(attempt, parseRetryAfterMs(response));
+      console.warn(
+        `[adzuna] transient HTTP ${response.status} on page=${page} country=${this.country} ` +
+          `attempt=${attempt}/${MAX_FETCH_ATTEMPTS}, retrying in ${Math.round(delay)}ms`,
+      );
+      await sleep(delay);
+    }
+    // Unreachable: the loop above always either returns a response or throws
+    // on its final attempt. Satisfies the compiler's control-flow analysis.
+    throw new AdzunaProviderError("server_error", "Adzuna request failed after retries.");
+  }
+
   /** Never logs or throws with the URL/credentials embedded — safe to surface `message` to an admin UI. */
   async fetchJobs(): Promise<RawProviderJob[]> {
     this.invalidRecordCount = 0;
@@ -216,9 +325,7 @@ export class AdzunaJobSourceAdapter implements JobSourceAdapter {
     while (jobs.length < this.maxJobs) {
       const remaining = this.maxJobs - jobs.length;
       const resultsPerPage = Math.min(MAX_RESULTS_PER_PAGE, remaining);
-      const response = await fetchWithTimeout(this.buildUrl(page, resultsPerPage));
-
-      if (!response.ok) throwForHttpStatus(response.status);
+      const response = await this.fetchPageWithRetry(page, resultsPerPage);
 
       let json: unknown;
       try {

@@ -232,7 +232,7 @@ describe("AdzunaJobSourceAdapter — mapping", () => {
   });
 });
 
-describe("AdzunaJobSourceAdapter — provider error handling", () => {
+describe("AdzunaJobSourceAdapter — provider error handling (non-transient: fails on first attempt)", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -243,56 +243,32 @@ describe("AdzunaJobSourceAdapter — provider error handling", () => {
     vi.unstubAllGlobals();
   });
 
-  it("throws unauthorized on HTTP 401", async () => {
+  it("throws unauthorized on HTTP 401, without retrying", async () => {
     fetchMock.mockResolvedValueOnce(new Response("", { status: 401 }));
     const adapter = new AdzunaJobSourceAdapter("id", "key");
     await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "unauthorized" });
+    expect(fetchMock).toHaveBeenCalledTimes(1); // retrying a bad credential would never help
   });
 
-  it("throws forbidden on HTTP 403", async () => {
+  it("throws forbidden on HTTP 403, without retrying", async () => {
     fetchMock.mockResolvedValueOnce(new Response("", { status: 403 }));
     const adapter = new AdzunaJobSourceAdapter("id", "key");
     await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "forbidden" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("throws rate_limited on HTTP 429", async () => {
-    fetchMock.mockResolvedValueOnce(new Response("", { status: 429 }));
-    const adapter = new AdzunaJobSourceAdapter("id", "key");
-    await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "rate_limited" });
-  });
-
-  it("throws server_error on HTTP 500", async () => {
-    fetchMock.mockResolvedValueOnce(new Response("", { status: 500 }));
-    const adapter = new AdzunaJobSourceAdapter("id", "key");
-    await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "server_error" });
-  });
-
-  it("throws invalid_response on malformed JSON", async () => {
+  it("throws invalid_response on malformed JSON, without retrying", async () => {
     fetchMock.mockResolvedValueOnce(new Response("not json{{", { status: 200 }));
     const adapter = new AdzunaJobSourceAdapter("id", "key");
     await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "invalid_response" });
+    expect(fetchMock).toHaveBeenCalledTimes(1); // a response shape we don't recognize won't fix itself
   });
 
-  it("throws invalid_response when the top-level shape is unrecognized", async () => {
+  it("throws invalid_response when the top-level shape is unrecognized, without retrying", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ unexpected: true }));
     const adapter = new AdzunaJobSourceAdapter("id", "key");
     await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "invalid_response" });
-  });
-
-  it("throws network_error when fetch rejects", async () => {
-    fetchMock.mockRejectedValueOnce(new TypeError("fetch failed"));
-    const adapter = new AdzunaJobSourceAdapter("id", "key");
-    await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "network_error" });
-  });
-
-  it("throws timeout when the request is aborted", async () => {
-    fetchMock.mockImplementationOnce(() => {
-      const err = new Error("aborted");
-      err.name = "AbortError";
-      return Promise.reject(err);
-    });
-    const adapter = new AdzunaJobSourceAdapter("id", "key");
-    await expect(adapter.fetchJobs()).rejects.toMatchObject({ code: "timeout" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("never includes the app key in a thrown error message", async () => {
@@ -317,5 +293,167 @@ describe("AdzunaJobSourceAdapter — provider error handling", () => {
     const jobs = await adapter.fetchJobs();
     expect(jobs).toHaveLength(2);
     expect(adapter.invalidRecordCount).toBe(1);
+  });
+});
+
+describe("AdzunaJobSourceAdapter — retry/backoff for transient failures", () => {
+  // Regression coverage for the production bug: a single transient response
+  // (HTTP 503 being the reported case) used to fail the ENTIRE automated
+  // sync immediately, with zero retries. `vi.useFakeTimers()` lets these
+  // tests exercise the real exponential-backoff delays (`sleep()` inside
+  // `fetchPageWithRetry`) without actually waiting for them -- keeping the
+  // suite fast and immune to CI/CPU-contention flakiness regardless of how
+  // long the real backoff schedule is.
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("HTTP 503 (the reported production error): retries and succeeds if a later attempt works", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(jsonResponse({ results: [oneResult()], count: 1 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("HTTP 503 that never recovers: retries up to the limit, then fails with a diagnosable message", async () => {
+    fetchMock.mockResolvedValue(new Response("", { status: 503 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    const assertion = expect(promise).rejects.toMatchObject({
+      code: "server_error",
+      message: expect.stringMatching(/HTTP 503.*after 3 attempts/),
+    });
+    await vi.runAllTimersAsync();
+    await assertion;
+    // Retries are bounded -- this is what makes it "not retry indefinitely".
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("HTTP 429 (rate limited): retries and eventually succeeds", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("", { status: 429 }))
+      .mockResolvedValueOnce(new Response("", { status: 429 }))
+      .mockResolvedValueOnce(jsonResponse({ results: [oneResult()], count: 1 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("HTTP 429 that never recovers: fails with rate_limited after the retry limit, not retried forever", async () => {
+    fetchMock.mockResolvedValue(new Response("", { status: 429 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    const assertion = expect(promise).rejects.toMatchObject({ code: "rate_limited" });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("respects a numeric Retry-After header on 429 instead of the default backoff schedule", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("", { status: 429, headers: { "Retry-After": "2" } }))
+      .mockResolvedValueOnce(jsonResponse({ results: [oneResult()], count: 1 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    // Nothing should resolve before the requested 2s wait.
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1_500);
+    await expect(promise).resolves.toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("network error (fetch rejects): retries, then fails as network_error if it never recovers", async () => {
+    fetchMock.mockRejectedValue(new TypeError("fetch failed"));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    const assertion = expect(promise).rejects.toMatchObject({ code: "network_error" });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("network error: retries and succeeds once connectivity returns", async () => {
+    fetchMock
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(jsonResponse({ results: [oneResult()], count: 1 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("timeout (aborted request): retries, then fails as timeout if every attempt times out", async () => {
+    fetchMock.mockImplementation(() => {
+      const err = new Error("aborted");
+      err.name = "AbortError";
+      return Promise.reject(err);
+    });
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    const assertion = expect(promise).rejects.toMatchObject({ code: "timeout" });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("does not treat a mid-batch retry as a duplicate page: a page that succeeds on retry contributes its jobs exactly once", async () => {
+    const page1 = Array.from({ length: 50 }, (_, i) => oneResult({ id: i + 1 }));
+    const page2 = [oneResult({ id: 51 })];
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ results: page1, count: 51 })) // page 1: succeeds first try
+      .mockResolvedValueOnce(new Response("", { status: 503 })) // page 2: transient failure...
+      .mockResolvedValueOnce(jsonResponse({ results: page2, count: 51 })); // ...then succeeds on retry
+    const adapter = new AdzunaJobSourceAdapter("id", "key", { maxJobs: 51 });
+
+    const promise = adapter.fetchJobs();
+    await vi.runAllTimersAsync();
+    const jobs = await promise;
+    // 51 total, no duplicates -- retrying page 2 did not double-count it or re-fetch page 1.
+    expect(jobs).toHaveLength(51);
+    expect(new Set(jobs.map((j) => j.externalId)).size).toBe(51);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("backs off with increasing delay between attempts (not an immediate retry loop)", async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(jsonResponse({ results: [oneResult()], count: 1 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+
+    const promise = adapter.fetchJobs();
+    await Promise.resolve(); // let the first attempt's fetch() promise settle
+    expect(fetchMock).toHaveBeenCalledTimes(1); // still just the first attempt, waiting to back off
+
+    await vi.advanceTimersByTimeAsync(400); // under the ~500ms base delay
+    expect(fetchMock).toHaveBeenCalledTimes(1); // retry #2 hasn't fired yet
+
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toHaveLength(1);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
