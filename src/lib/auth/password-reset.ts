@@ -70,7 +70,7 @@ export interface ChangePasswordAuthClient {
   }): Promise<{ error: { message: string } | null }>;
   updateUser(attributes: {
     password: string;
-    current_password?: string;
+    currentPassword?: string;
   }): Promise<{ error: { message: string } | null }>;
 }
 
@@ -203,7 +203,7 @@ export async function changePasswordCore(
     // This is a SECOND, server-side confirmation of the same password
     // already verified above -- it strengthens verification, it does not
     // replace or weaken the `signInWithPassword` check.
-    current_password: input.currentPassword,
+    currentPassword: input.currentPassword,
   });
   if (updateError) {
     if (isReauthenticationRequiredError(updateError.message)) {
