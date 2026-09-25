@@ -68,7 +68,25 @@ export interface ChangePasswordAuthClient {
     email: string;
     password: string;
   }): Promise<{ error: { message: string } | null }>;
-  updateUser(attributes: { password: string }): Promise<{ error: { message: string } | null }>;
+  updateUser(attributes: {
+    password: string;
+    current_password?: string;
+  }): Promise<{ error: { message: string } | null }>;
+}
+
+/**
+ * Matches Supabase Auth's own "you must reauthenticate before this succeeds"
+ * rejection (GoTrue's `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_REAUTHENTICATION`
+ * project setting -- see the root-cause note on `changePasswordCore` below).
+ * GoTrue's own wording for this has read "New password should be different
+ * from the old password" is NOT this case; the reauthentication rejection
+ * itself has been reported (supabase/auth#1015) as messages containing
+ * "reauthenticat" (e.g. "requires reauthentication" / "reauthentication
+ * required") -- matched case-insensitively since Supabase does not publish
+ * this string as a stable, versioned error code.
+ */
+function isReauthenticationRequiredError(message: string): boolean {
+  return /reauthenticat/i.test(message);
 }
 
 export interface ChangePasswordInput {
@@ -96,6 +114,40 @@ export type ChangePasswordResult =
  * validation problem, and vice versa) — and, per the required ordering,
  * `updateUser` is only ever reached after `signInWithPassword` has returned
  * successfully.
+ *
+ * --- Root cause of "Current password required" appearing despite a correct
+ * --- current password having been supplied ---
+ * This app's own code has never contained that literal string. The actual
+ * cause is external to this repository: Supabase Auth (GoTrue) has TWO
+ * separate, OPT-IN, project-level security settings, either of which
+ * rejects `updateUser({ password })` even after a correct password was
+ * already verified client-side via `signInWithPassword`:
+ *
+ *  1. `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD` -- GoTrue's
+ *     `PUT /user` endpoint itself REQUIRES a `current_password` field in the
+ *     SAME request body as the new password (supabase/auth PR #2215). This
+ *     app's `signInWithPassword` call satisfies nothing here: it's a
+ *     separate request GoTrue's server-side check for this setting knows
+ *     nothing about. Fixed below by always sending `current_password`
+ *     alongside `password` -- harmless if the project setting is off,
+ *     required if it's on.
+ *  2. `GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_REAUTHENTICATION` -- requires
+ *     a `nonce` (obtained via `supabase.auth.reauthenticate()`, which emails
+ *     the user a one-time code) on `updateUser`, for any session older than
+ *     24h. This app has no nonce/OTP-entry UI, so it genuinely cannot
+ *     satisfy this one without a real feature addition. If this is what's
+ *     enabled on the affected Supabase project, `updateUser` is rejected
+ *     with a message mentioning reauthentication (supabase/auth#1015); that
+ *     specific case is detected below and reported honestly (asking the
+ *     user to sign out and back in, which resets their session age) instead
+ *     of surfacing GoTrue's raw, confusing error text or silently pretending
+ *     the change worked.
+ *
+ * Both are project-level Auth Settings (or GOTRUE_* env vars on a
+ * self-hosted instance) — neither is visible by reading this app's source,
+ * which is why this could not be reproduced from source code or a mocked
+ * Supabase client alone. If your project has neither setting enabled,
+ * neither code path above is ever exercised.
  */
 export async function changePasswordCore(
   auth: ChangePasswordAuthClient,
@@ -143,8 +195,25 @@ export async function changePasswordCore(
     return { ok: false, field: "currentPassword", message: "Current password is incorrect." };
   }
 
-  const { error: updateError } = await auth.updateUser({ password: parsed.data.password });
+  const { error: updateError } = await auth.updateUser({
+    password: parsed.data.password,
+    // Always sent, not conditionally: satisfies
+    // GOTRUE_SECURITY_UPDATE_PASSWORD_REQUIRE_CURRENT_PASSWORD when that
+    // project setting is on, and is simply unused by GoTrue when it's off.
+    // This is a SECOND, server-side confirmation of the same password
+    // already verified above -- it strengthens verification, it does not
+    // replace or weaken the `signInWithPassword` check.
+    current_password: input.currentPassword,
+  });
   if (updateError) {
+    if (isReauthenticationRequiredError(updateError.message)) {
+      return {
+        ok: false,
+        field: "form",
+        message:
+          "For your security, please sign out and back in, then try changing your password again.",
+      };
+    }
     // Propagate Supabase's own message (e.g. "New password should be
     // different from the old password.") rather than a generic one, same as
     // the pre-extraction component behavior.
