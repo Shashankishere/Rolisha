@@ -85,7 +85,7 @@ describe("changePasswordCore", () => {
     });
     expect(auth.updateUser).toHaveBeenCalledWith({
       password: VALID_INPUT.newPassword,
-      currentPassword: VALID_INPUT.currentPassword,
+      current_password: VALID_INPUT.currentPassword,
     });
   });
 
@@ -249,7 +249,7 @@ describe("changePasswordCore — the reported production scenario (external GoTr
 
     expect(auth.updateUser).toHaveBeenCalledWith({
       password: VALID_INPUT.newPassword,
-      currentPassword: VALID_INPUT.currentPassword, // <- the actual fix
+      current_password: VALID_INPUT.currentPassword, // <- the actual fix
     });
   });
 
