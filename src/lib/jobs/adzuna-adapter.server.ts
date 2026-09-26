@@ -67,6 +67,13 @@ export interface AdzunaSearchParams {
   country?: string | null | undefined;
   /** Maximum number of jobs to fetch across all pages. Capped at HARD_MAX_JOBS. */
   maxJobs?: number | null | undefined;
+  /** Purely for diagnostics ("scheduled" vs "manual" vs "http-cron") -- never
+   * affects the request itself. Lets logs and error messages distinguish a
+   * genuinely automated run from an admin-triggered one, which matters when
+   * investigating whether the two produce different real-world outcomes
+   * (e.g. one hitting a time-correlated upstream condition the other
+   * didn't) even though both share the exact same code path. */
+  trigger?: string | null | undefined;
 }
 
 /** True when both required env vars are present and non-empty. Safe to call from a route/UI status check.
@@ -157,35 +164,47 @@ async function fetchWithTimeout(url: string): Promise<Response> {
  * `job_sync_runs.error_message`) from a bug in this application: a message
  * ending "after 3 attempts" means Adzuna itself was unavailable across
  * several real, spaced-out requests, not that we never tried. */
-function throwForHttpStatus(status: number, attempts?: number): never {
+function throwForHttpStatus(
+  status: number,
+  page: number,
+  country: string,
+  attempts?: number,
+): never {
   const attemptSuffix = attempts && attempts > 1 ? ` after ${attempts} attempts` : "";
+  // `page` and `country` are included on every branch (not just the retried
+  // 429/5xx ones) so `job_sync_runs.error_message` always identifies which
+  // request failed, even for a non-retried, first-attempt rejection like
+  // 401/403 -- this is the diagnostic gap that made a bare "HTTP 503 after 3
+  // attempts" impossible to localize to a specific request. Never includes
+  // the request URL or credentials, only these already-non-secret values.
+  const location = ` on page ${page} for country ${country}`;
   if (status === 401) {
     throw new AdzunaProviderError(
       "unauthorized",
-      "Adzuna rejected the request (HTTP 401 — invalid credentials).",
+      `Adzuna rejected the request${location} (HTTP 401 — invalid credentials).`,
     );
   }
   if (status === 403) {
     throw new AdzunaProviderError(
       "forbidden",
-      "Adzuna rejected the request (HTTP 403 — forbidden).",
+      `Adzuna rejected the request${location} (HTTP 403 — forbidden).`,
     );
   }
   if (status === 429) {
     throw new AdzunaProviderError(
       "rate_limited",
-      `Adzuna rate limit exceeded (HTTP 429)${attemptSuffix}. Try again later.`,
+      `Adzuna rate limit exceeded${location} (HTTP 429)${attemptSuffix}. Try again later.`,
     );
   }
   if (status >= 500) {
     throw new AdzunaProviderError(
       "server_error",
-      `Adzuna server error (HTTP ${status})${attemptSuffix}.`,
+      `Adzuna server error (HTTP ${status})${location}${attemptSuffix}.`,
     );
   }
   throw new AdzunaProviderError(
     "invalid_response",
-    `Adzuna returned an unexpected status (HTTP ${status}).`,
+    `Adzuna returned an unexpected status${location} (HTTP ${status}).`,
   );
 }
 
@@ -247,6 +266,7 @@ export class AdzunaJobSourceAdapter implements JobSourceAdapter {
   private readonly location: string | null;
   private readonly country: string;
   private readonly maxJobs: number;
+  private readonly trigger: string;
 
   constructor(appId: string, appKey: string, params: AdzunaSearchParams = {}) {
     if (!appId || !appKey) {
@@ -264,6 +284,7 @@ export class AdzunaJobSourceAdapter implements JobSourceAdapter {
     this.country = (params.country?.trim() || "in").toLowerCase();
     const requested = params.maxJobs ?? 20;
     this.maxJobs = Math.min(Math.max(1, requested), HARD_MAX_JOBS);
+    this.trigger = params.trigger?.trim() || "unknown";
   }
 
   private buildUrl(page: number, resultsPerPage: number): string {
@@ -282,38 +303,54 @@ export class AdzunaJobSourceAdapter implements JobSourceAdapter {
    * non-transient failure (401/403/malformed response) still throws on the
    * very first attempt, exactly as before -- retrying those would only
    * delay reporting a real, non-recoverable problem. Never logs the request
-   * URL (it carries app_id/app_key as query params); only the page,
-   * country, attempt count, and status/error class are logged. */
+   * URL (it carries app_id/app_key as query params) or any credential;
+   * only already-non-secret request metadata is logged: trigger, country,
+   * WHETHER a query/location was set (never their values -- a location can
+   * be personally identifying), maxJobs, page, resultsPerPage, attempt,
+   * status/error class, and how long that attempt took. This is what makes
+   * it possible to tell, after the fact, whether a scheduled run's failure
+   * happened on page 1 or 2, and whether it looked any different from a
+   * manual run hitting the exact same page. */
   private async fetchPageWithRetry(page: number, resultsPerPage: number): Promise<Response> {
+    const context =
+      `trigger=${this.trigger} page=${page} country=${this.country} ` +
+      `query=${Boolean(this.query)} location=${Boolean(this.location)} ` +
+      `maxJobs=${this.maxJobs} resultsPerPage=${resultsPerPage}`;
     for (let attempt = 1; attempt <= MAX_FETCH_ATTEMPTS; attempt++) {
+      const attemptStartedAt = Date.now();
       let response: Response;
       try {
         response = await fetchWithTimeout(this.buildUrl(page, resultsPerPage));
       } catch (error) {
+        const durationMs = Date.now() - attemptStartedAt;
         if (!isTransientAdzunaError(error) || attempt === MAX_FETCH_ATTEMPTS) throw error;
         const delay = computeBackoffDelayMs(attempt, null);
         console.warn(
-          `[adzuna] transient ${error.code} on page=${page} country=${this.country} ` +
-            `attempt=${attempt}/${MAX_FETCH_ATTEMPTS}, retrying in ${Math.round(delay)}ms`,
+          `[adzuna] ${context} attempt=${attempt}/${MAX_FETCH_ATTEMPTS} ` +
+            `transient=${error.code} durationMs=${durationMs}, retrying in ${Math.round(delay)}ms`,
         );
         await sleep(delay);
         continue;
       }
 
+      const durationMs = Date.now() - attemptStartedAt;
       if (response.ok) return response;
       if (!isTransientHttpStatus(response.status) || attempt === MAX_FETCH_ATTEMPTS) {
-        throwForHttpStatus(response.status, attempt);
+        throwForHttpStatus(response.status, page, this.country, attempt);
       }
       const delay = computeBackoffDelayMs(attempt, parseRetryAfterMs(response));
       console.warn(
-        `[adzuna] transient HTTP ${response.status} on page=${page} country=${this.country} ` +
-          `attempt=${attempt}/${MAX_FETCH_ATTEMPTS}, retrying in ${Math.round(delay)}ms`,
+        `[adzuna] ${context} attempt=${attempt}/${MAX_FETCH_ATTEMPTS} ` +
+          `status=${response.status} durationMs=${durationMs}, retrying in ${Math.round(delay)}ms`,
       );
       await sleep(delay);
     }
     // Unreachable: the loop above always either returns a response or throws
     // on its final attempt. Satisfies the compiler's control-flow analysis.
-    throw new AdzunaProviderError("server_error", "Adzuna request failed after retries.");
+    throw new AdzunaProviderError(
+      "server_error",
+      `Adzuna request failed after retries on page ${page} for country ${this.country}.`,
+    );
   }
 
   /** Never logs or throws with the URL/credentials embedded — safe to surface `message` to an admin UI. */

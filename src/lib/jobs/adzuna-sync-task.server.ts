@@ -203,6 +203,11 @@ export async function runAdzunaSyncTask(
       location: params.location ?? envConfig.location,
       country: params.country ?? envConfig.country,
       maxJobs: params.maxJobs ?? envConfig.maxJobs,
+      // For diagnostics only (see AdzunaSearchParams.trigger) -- lets a
+      // scheduled run's logs/errors be told apart from a manual one even
+      // though both call this exact same function with the exact same
+      // resolved config.
+      trigger,
     });
 
     const summary = await ingestJobs(supabaseAdmin, adapter);

@@ -457,3 +457,233 @@ describe("AdzunaJobSourceAdapter — retry/backoff for transient failures", () =
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
+
+/**
+ * Investigation: "automatic (scheduled) Adzuna sync fails with HTTP 503
+ * after 3 attempts, while manual sync succeeds."
+ *
+ * Confirmed evidence going in: manual sync with the SAME resolved config
+ * production's automatic sync uses (query=null, location=null, country=in,
+ * maxJobs=50) succeeds; automatic sync fails. Tracing every call site
+ * (createAdzunaAdapterFromEnv -> AdzunaJobSourceAdapter -> fetchPageWithRetry
+ * -> buildUrl) shows there is exactly ONE implementation of each, with no
+ * branching by trigger type anywhere -- manual and scheduled calls run
+ * byte-for-byte the same code. These tests make that verifiable rather than
+ * asserted: they prove the constructed request and resolved config are
+ * identical regardless of trigger, and pin down exactly which page a
+ * maxJobs=50 sync can ever reach. No application-level bug that would
+ * explain a manual/automatic behavioral difference was found; see the
+ * final report for what that leaves as the likely explanation.
+ */
+describe("diagnostic: identifying which page/request an error belongs to", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("a 503 that exhausts retries reports the exact page, country, status, and attempt count", async () => {
+    fetchMock.mockResolvedValue(new Response("", { status: 503 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key", { country: "in", maxJobs: 50 });
+
+    const promise = adapter.fetchJobs();
+    const assertion = expect(promise).rejects.toMatchObject({
+      code: "server_error",
+      // The exact format requested: "... on page 1 for country in ...".
+      message: "Adzuna server error (HTTP 503) on page 1 for country in after 3 attempts.",
+    });
+    await vi.runAllTimersAsync();
+    await assertion;
+  });
+
+  it("with the current maxJobs=50 default, a sync can only ever reach page 1 -- page 2 is architecturally unreachable", async () => {
+    // math: resultsPerPage on page 1 = min(50, maxJobs - 0) = 50. A full
+    // page of 50 accepted results brings jobs.length to 50, which equals
+    // maxJobs, so `while (jobs.length < this.maxJobs)` is false BEFORE a
+    // page 2 request would ever be made. This directly answers "is the
+    // automatic failure on page 1 or page 2?" for production's actual
+    // configuration: it can only ever be page 1.
+    const fullPage = Array.from({ length: 50 }, (_, i) => oneResult({ id: i + 1 }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ results: fullPage, count: 200 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key", { maxJobs: 50 });
+
+    const jobs = await adapter.fetchJobs();
+
+    expect(jobs).toHaveLength(50);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // page 2 never requested
+  });
+
+  it("a 503 on an ACTUAL page 2 (only reachable when maxJobs > 50) correctly reports page 2, not page 1", async () => {
+    const fullPage = Array.from({ length: 50 }, (_, i) => oneResult({ id: i + 1 }));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ results: fullPage, count: 200 })) // page 1 OK
+      .mockResolvedValue(new Response("", { status: 503 })); // page 2 fails every attempt
+    const adapter = new AdzunaJobSourceAdapter("id", "key", { maxJobs: 75 });
+
+    const promise = adapter.fetchJobs();
+    const assertion = expect(promise).rejects.toMatchObject({
+      message: expect.stringContaining("on page 2 for country in"),
+    });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(1 + 3); // page 1 once, page 2 three times
+  });
+
+  it("a non-retried failure (401) still reports its page and country on the very first attempt", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("", { status: 401 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key", { country: "gb" });
+    await expect(adapter.fetchJobs()).rejects.toMatchObject({
+      code: "unauthorized",
+      message: expect.stringContaining("on page 1 for country gb"),
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retry behavior remains exactly 3 attempts (unchanged by the diagnostic improvement)", async () => {
+    fetchMock.mockResolvedValue(new Response("", { status: 503 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key");
+    const promise = adapter.fetchJobs();
+    const assertion = expect(promise).rejects.toMatchObject({ code: "server_error" });
+    await vi.runAllTimersAsync();
+    await assertion;
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("credentials never appear in the thrown error message OR in any console.warn/console.log line, across every attempt", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    fetchMock.mockResolvedValue(new Response("", { status: 503 }));
+    const secretId = "SECRET-APP-ID-abc123";
+    const secretKey = "SECRET-APP-KEY-xyz789";
+    const adapter = new AdzunaJobSourceAdapter(secretId, secretKey, { maxJobs: 50 });
+
+    const promise = adapter.fetchJobs();
+    const assertion = promise.catch((e: Error) => e);
+    await vi.runAllTimersAsync();
+    const error = (await assertion) as Error;
+
+    const allLogText = [
+      error.message,
+      ...warnSpy.mock.calls.map((c) => c.join(" ")),
+      ...logSpy.mock.calls.map((c) => c.join(" ")),
+    ].join("\n");
+    expect(allLogText).not.toContain(secretId);
+    expect(allLogText).not.toContain(secretKey);
+    warnSpy.mockRestore();
+    logSpy.mockRestore();
+  });
+
+  it("the retry-warning log line carries the requested safe diagnostic fields (trigger, page, country, presence flags, maxJobs, resultsPerPage, attempt, status) and nothing secret", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    fetchMock
+      .mockResolvedValueOnce(new Response("", { status: 503 }))
+      .mockResolvedValueOnce(jsonResponse({ results: [oneResult()], count: 1 }));
+    const adapter = new AdzunaJobSourceAdapter("id", "key", {
+      country: "in",
+      maxJobs: 50,
+      query: "data analyst",
+      trigger: "scheduled",
+    });
+
+    const promise = adapter.fetchJobs();
+    await vi.runAllTimersAsync();
+    await promise;
+
+    const warned = warnSpy.mock.calls.map((c) => c.join(" ")).join("\n");
+    expect(warned).toContain("trigger=scheduled");
+    expect(warned).toContain("page=1");
+    expect(warned).toContain("country=in");
+    expect(warned).toContain("query=true"); // presence only
+    expect(warned).toContain("location=false");
+    expect(warned).toContain("maxJobs=50");
+    expect(warned).toContain("resultsPerPage=50");
+    expect(warned).toContain("attempt=1/3");
+    expect(warned).toContain("status=503");
+    expect(warned).not.toContain("data analyst"); // the query's VALUE must never be logged
+    warnSpy.mockRestore();
+  });
+});
+
+describe("diagnostic: manual and scheduled triggers are provably the same request", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+  let capturedUrls: string[];
+
+  beforeEach(() => {
+    capturedUrls = [];
+    fetchMock = vi.fn().mockImplementation((input: Request | string) => {
+      const url = input instanceof Request ? input.url : String(input);
+      capturedUrls.push(url.replace(/(app_id|app_key)=[^&]*/g, "$1=REDACTED"));
+      return Promise.resolve(jsonResponse({ results: [oneResult()], count: 1 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("with production's confirmed automatic config, a 'manual' trigger and a 'scheduled' trigger build the IDENTICAL request (credentials redacted for comparison only)", async () => {
+    // query=null, location=null, country=in, maxJobs=50 -- exactly what the
+    // task's confirmed evidence says automatic sync resolves to, and what
+    // the successful manual 50-job test used.
+    const config = { query: null, location: null, country: "in", maxJobs: 50 } as const;
+
+    const manual = new AdzunaJobSourceAdapter("same-id", "same-key", {
+      ...config,
+      trigger: "manual",
+    });
+    await manual.fetchJobs();
+    const manualUrl = capturedUrls[0];
+
+    const scheduled = new AdzunaJobSourceAdapter("same-id", "same-key", {
+      ...config,
+      trigger: "scheduled",
+    });
+    await scheduled.fetchJobs();
+    const scheduledUrl = capturedUrls[1];
+
+    // Byte-identical (credentials aside, which are equal anyway when the
+    // same Worker's env is read by both): trigger is a label used only for
+    // logging, never a request parameter -- there is no code path where it
+    // could make the actual Adzuna request differ.
+    expect(scheduledUrl).toBe(manualUrl);
+  });
+
+  it("runAdzunaSyncTask itself (not just the adapter) produces the same job-fetch outcome for 'manual' and 'scheduled' given the same environment", async () => {
+    const { runAdzunaSyncTask } = await import("@/lib/jobs/adzuna-sync-task.server");
+    const { createFakeSupabase } = await import("./__tests__/fake-supabase");
+    const originalId = process.env["ADZUNA_APP_ID"];
+    const originalKey = process.env["ADZUNA_APP_KEY"];
+    process.env["ADZUNA_APP_ID"] = "same-id";
+    process.env["ADZUNA_APP_KEY"] = "same-key";
+    try {
+      // Two independent fake databases (each call to ingestJobs upserts by
+      // external_id, so reusing one would make the second call see the
+      // first call's rows as "already exists" -- an ingest-layer nuance
+      // unrelated to what this test checks) but built from the exact same
+      // real adapter/runner code and the exact same Adzuna response.
+      const manualDb = createFakeSupabase();
+      const scheduledDb = createFakeSupabase();
+
+      const manualResult = await runAdzunaSyncTask(manualDb, { trigger: "manual" });
+      const scheduledResult = await runAdzunaSyncTask(scheduledDb, { trigger: "scheduled" });
+
+      // Same environment, same code path -> the same outcome (status and
+      // fetched count). The only thing that legitimately differs between a
+      // manual and a scheduled call is the `trigger` label recorded
+      // alongside the run, not how the sync itself behaves.
+      expect(scheduledResult.status).toBe(manualResult.status);
+      expect(scheduledResult.fetched).toBe(manualResult.fetched);
+      expect(scheduledDb.table("job_sync_runs")[0]!["trigger"]).toBe("scheduled");
+      expect(manualDb.table("job_sync_runs")[0]!["trigger"]).toBe("manual");
+    } finally {
+      if (originalId === undefined) delete process.env["ADZUNA_APP_ID"];
+      else process.env["ADZUNA_APP_ID"] = originalId;
+      if (originalKey === undefined) delete process.env["ADZUNA_APP_KEY"];
+      else process.env["ADZUNA_APP_KEY"] = originalKey;
+    }
+  });
+});
