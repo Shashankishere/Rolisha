@@ -28,16 +28,26 @@ vi.mock("@/lib/payments/razorpay-client.server", async () => {
     ...actual,
     createOrFetchCustomer: vi.fn(),
     createSubscription: vi.fn(),
+    fetchCustomer: vi.fn(),
   };
 });
 
-import { createOrFetchCustomer, createSubscription } from "@/lib/payments/razorpay-client.server";
+import {
+  RazorpayApiError,
+  createOrFetchCustomer,
+  createSubscription,
+  fetchCustomer,
+} from "@/lib/payments/razorpay-client.server";
 import { createCheckoutSession, verifyCheckoutSession } from "@/lib/payments/checkout.server";
 
 beforeEach(() => {
   adminFake = createFakeSupabase();
   vi.mocked(createOrFetchCustomer).mockReset();
   vi.mocked(createSubscription).mockReset();
+  // Default: any stored customer id is valid unless a test overrides this
+  // to simulate the "does not exist" condition.
+  vi.mocked(fetchCustomer).mockReset();
+  vi.mocked(fetchCustomer).mockResolvedValue({ id: "cust_existing", email: "user@example.com" });
 });
 
 afterEach(() => {
@@ -71,7 +81,7 @@ describe("createCheckoutSession", () => {
     });
   });
 
-  it("reuses an existing billing customer instead of creating a second one", async () => {
+  it("reuses an existing billing customer that Razorpay confirms is still valid", async () => {
     setConfigEnv();
     const userClient = createFakeSupabase();
     seedProfile(userClient, USER_A, { email: "user@example.com" });
@@ -88,8 +98,82 @@ describe("createCheckoutSession", () => {
 
     await createCheckoutSession(userClient, USER_A, "pro");
 
+    expect(fetchCustomer).toHaveBeenCalledWith(expect.anything(), "cust_existing");
     expect(createOrFetchCustomer).not.toHaveBeenCalled();
     expect(adminFake.table("billing_customers")).toHaveLength(1);
+    expect(adminFake.table("billing_customers")[0]).toMatchObject({
+      razorpay_customer_id: "cust_existing",
+    });
+    expect(createSubscription).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ customerId: "cust_existing" }),
+    );
+  });
+
+  it("replaces a stale (nonexistent) stored customer id with a freshly created one, and persists it", async () => {
+    setConfigEnv();
+    const userClient = createFakeSupabase();
+    seedProfile(userClient, USER_A, { email: "user@example.com" });
+    adminFake
+      .table("billing_customers")
+      .push({ user_id: USER_A, razorpay_customer_id: "cust_stale_test_mode" });
+
+    // Exactly the shape Razorpay returns for `GET /customers/{id}` when the
+    // id doesn't exist for the configured account/mode.
+    vi.mocked(fetchCustomer).mockRejectedValue(
+      new RazorpayApiError("The id provided does not exist", 400, "BAD_REQUEST_ERROR"),
+    );
+    vi.mocked(createOrFetchCustomer).mockResolvedValue({
+      id: "cust_new_live",
+      email: "user@example.com",
+    });
+    vi.mocked(createSubscription).mockResolvedValue({
+      id: "sub_new_stale",
+      plan_id: "plan_pro",
+      status: "created",
+      current_end: null,
+    });
+
+    await createCheckoutSession(userClient, USER_A, "pro");
+
+    expect(createOrFetchCustomer).toHaveBeenCalledTimes(1);
+    // Replacement customer used for the actual subscription creation.
+    expect(createSubscription).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ customerId: "cust_new_live" }),
+    );
+    // The stale row was replaced in place, not duplicated.
+    expect(adminFake.table("billing_customers")).toHaveLength(1);
+    expect(adminFake.table("billing_customers")[0]).toMatchObject({
+      user_id: USER_A,
+      razorpay_customer_id: "cust_new_live",
+    });
+  });
+
+  it("does NOT replace the stored customer id for an unrelated Razorpay error", async () => {
+    setConfigEnv();
+    const userClient = createFakeSupabase();
+    seedProfile(userClient, USER_A, { email: "user@example.com" });
+    adminFake
+      .table("billing_customers")
+      .push({ user_id: USER_A, razorpay_customer_id: "cust_existing" });
+
+    // A generic/unrelated failure -- e.g. auth or rate limiting -- must not
+    // be treated as "customer doesn't exist".
+    vi.mocked(fetchCustomer).mockRejectedValue(
+      new RazorpayApiError("Too many requests", 429, "SERVER_ERROR"),
+    );
+
+    await expect(createCheckoutSession(userClient, USER_A, "pro")).rejects.toThrow(
+      /too many requests/i,
+    );
+
+    expect(createOrFetchCustomer).not.toHaveBeenCalled();
+    expect(createSubscription).not.toHaveBeenCalled();
+    // Nothing was rewritten in billing_customers.
+    expect(adminFake.table("billing_customers")[0]).toMatchObject({
+      razorpay_customer_id: "cust_existing",
+    });
   });
 
   it("throws an honest configuration error when Razorpay isn't configured", async () => {

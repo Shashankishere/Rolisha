@@ -23,10 +23,32 @@ export class RazorpayApiError extends Error {
   constructor(
     message: string,
     readonly status: number,
+    /** Razorpay's own `error.code` from the response body (e.g.
+     * `BAD_REQUEST_ERROR`), when present. Distinct from `code` above,
+     * which is this error class's own fixed discriminant. */
+    readonly providerCode?: string,
   ) {
     super(message);
     this.name = "RazorpayApiError";
   }
+}
+
+/**
+ * Narrow, explicit check for the one condition callers are allowed to
+ * silently recover from: Razorpay reporting that an id referenced in a
+ * request does not exist for the configured account/mode. This is only
+ * safe to interpret this way when the error comes from a call that
+ * references a single id (e.g. `GET /customers/{id}`) -- a mixed-payload
+ * call like subscription creation also references a plan id, so the same
+ * message there wouldn't tell you *which* id is bad. Callers must only
+ * use this against single-id lookups.
+ */
+export function isIdNotFoundError(error: unknown): boolean {
+  return (
+    error instanceof RazorpayApiError &&
+    error.status === 400 &&
+    /does not exist/i.test(error.message)
+  );
 }
 
 export interface RazorpayConfig {
@@ -80,14 +102,12 @@ async function razorpayFetch<T>(
   }
 
   if (!response.ok) {
-    const message =
+    const errorBody =
       json && typeof json === "object" && json !== null && "error" in json
-        ? String(
-            (json as { error?: { description?: string } }).error?.description ??
-              response.statusText,
-          )
-        : response.statusText;
-    throw new RazorpayApiError(message, response.status);
+        ? (json as { error?: { code?: string; description?: string } }).error
+        : undefined;
+    const message = String(errorBody?.description ?? response.statusText);
+    throw new RazorpayApiError(message, response.status, errorBody?.code);
   }
 
   return json as T;
@@ -118,6 +138,20 @@ export async function createOrFetchCustomer(
     }
     throw error;
   }
+}
+
+/**
+ * Single-id lookup used to confirm a *stored* customer id is still valid
+ * for the currently configured Razorpay account/mode before reusing it
+ * (see checkout.server.ts). Because this call references exactly one id,
+ * a resulting `isIdNotFoundError` unambiguously means "this customer id",
+ * unlike the same error shape from `createSubscription`.
+ */
+export async function fetchCustomer(
+  config: RazorpayConfig,
+  customerId: string,
+): Promise<RazorpayCustomer> {
+  return razorpayFetch<RazorpayCustomer>(config, `/customers/${customerId}`);
 }
 
 export interface RazorpaySubscription {

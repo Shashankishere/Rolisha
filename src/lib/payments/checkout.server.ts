@@ -12,7 +12,9 @@ import {
   RazorpayNotConfiguredError,
   createOrFetchCustomer,
   createSubscription,
+  fetchCustomer,
   getRazorpayConfig,
+  isIdNotFoundError,
 } from "@/lib/payments/razorpay-client.server";
 import { verifyCheckoutSignature } from "@/lib/payments/signature.server";
 import {
@@ -94,6 +96,26 @@ export async function createCheckoutSession(
   let razorpayCustomerId = (existingCustomer as { razorpay_customer_id: string } | null)
     ?.razorpay_customer_id;
 
+  if (razorpayCustomerId) {
+    // A stored customer id can be stale -- e.g. created while this app was
+    // pointed at Razorpay Test Mode, then rendered nonexistent once Live
+    // credentials are configured (test/live are separate data stores).
+    // Confirm it still resolves against the *currently configured*
+    // account/mode before reusing it. This lookup references exactly one
+    // id, so isIdNotFoundError here unambiguously means "this customer id
+    // is gone" -- unlike the same error text from createSubscription,
+    // which also references a plan id and so can't be attributed safely.
+    // Any other failure (network blip, auth problem, rate limit) is
+    // re-thrown as-is: only this one, specifically-identified condition is
+    // allowed to trigger minting a replacement customer.
+    try {
+      await fetchCustomer(config, razorpayCustomerId);
+    } catch (error) {
+      if (!isIdNotFoundError(error)) throw error;
+      razorpayCustomerId = undefined;
+    }
+  }
+
   if (!razorpayCustomerId) {
     const customer = await createOrFetchCustomer(config, {
       email: (profile as any).email,
@@ -101,9 +123,17 @@ export async function createCheckoutSession(
       notes: { app_user_id: userId },
     });
     razorpayCustomerId = customer.id;
+    // Upsert rather than insert: this path is also reached when replacing
+    // a stale id for a user who already has a billing_customers row, and
+    // upserting on user_id keeps that idempotent/race-safe (two concurrent
+    // requests both landing here converge on one stored row rather than
+    // one of them crashing on the unique(user_id) constraint).
     await admin
       .from("billing_customers")
-      .insert({ user_id: userId, razorpay_customer_id: razorpayCustomerId });
+      .upsert(
+        { user_id: userId, razorpay_customer_id: razorpayCustomerId },
+        { onConflict: "user_id" },
+      );
   }
 
   const totalCount = Number(
