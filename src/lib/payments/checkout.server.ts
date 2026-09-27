@@ -24,19 +24,25 @@ import {
 type Client = any;
 
 // Razorpay's Create Subscription API requires `total_count` (a subscription
-// cannot be created without a finite number of billing cycles) and states it
-// supports subscriptions "for a maximum duration of 100 years" -- there is no
-// documented, unconditional way to make a monthly Razorpay subscription bill
-// literally forever. Rolisha's product model IS "bill monthly until the user
-// cancels" (see the Cancel action in the Settings billing panel), so this
-// uses Razorpay's own supported maximum (100 years of monthly cycles) rather
-// than an arbitrary shorter window: it's long enough that no real subscriber
-// will ever reach it, while still being an honest number we can actually
-// pass to the API. This is a per-subscription value sent on creation, not a
-// property of the Razorpay Dashboard plan (`RAZORPAY_PLAN_ID_PRO`), so
-// raising it here does not require -- and cannot be achieved by -- any
-// change to the plan configured in the Razorpay Dashboard.
-const DEFAULT_TOTAL_COUNT = 1200; // 100 years of monthly cycles (Razorpay's documented max).
+// cannot be created without a finite number of billing cycles). Razorpay's
+// general Subscriptions docs describe support for durations "up to 100
+// years" for the subscription object itself, so it's tempting to set
+// total_count as high as possible to approximate "bill monthly until
+// cancelled" -- but that figure applies to the subscription object in
+// general, not specifically to what a UPI Autopay mandate can be
+// registered for. We tried exactly that (total_count = 1200, i.e. 100
+// years of monthly cycles) and confirmed via a local A/B test that it
+// breaks UPI: Razorpay Checkout's QR step got stuck on "Refresh QR" and
+// never loaded with total_count = 1200, while reverting to 120 (10 years)
+// restored it immediately -- with every other checkout file/option held
+// identical. 120 is therefore not an arbitrary conservative choice, it's
+// the confirmed-working value. Cancellation remains explicit via the
+// Cancel action in the Settings billing panel regardless of this number.
+// This is a per-subscription value sent on creation, not a property of the
+// Razorpay Dashboard plan (`RAZORPAY_PLAN_ID_PRO`) -- changing it here
+// does not require, and cannot be achieved by, any change to the plan
+// configured in the Razorpay Dashboard.
+const DEFAULT_TOTAL_COUNT = 120; // 10 years of monthly cycles -- confirmed working with Razorpay UPI Autopay/QR; do not raise without re-confirming UPI still works.
 
 export interface CheckoutSession {
   razorpaySubscriptionId: string;

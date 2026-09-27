@@ -101,7 +101,7 @@ describe("createCheckoutSession", () => {
     await expect(createCheckoutSession(userClient, USER_A, "pro")).rejects.toThrow(/configured/i);
   });
 
-  it("passes Razorpay's supported maximum total_count (100 years of monthly cycles) by default", async () => {
+  it("defaults total_count to 120 (10 years of monthly cycles) -- the confirmed-working value for Razorpay UPI Autopay/QR", async () => {
     setConfigEnv();
     delete process.env["RAZORPAY_SUBSCRIPTION_TOTAL_COUNT"];
     const userClient = createFakeSupabase();
@@ -119,11 +119,55 @@ describe("createCheckoutSession", () => {
 
     expect(createSubscription).toHaveBeenCalledWith(
       expect.anything(),
+      expect.objectContaining({ totalCount: 120 }),
+    );
+  });
+
+  it("never defaults total_count to 1200 -- that value was confirmed to break Razorpay UPI QR generation", async () => {
+    setConfigEnv();
+    delete process.env["RAZORPAY_SUBSCRIPTION_TOTAL_COUNT"];
+    const userClient = createFakeSupabase();
+    seedProfile(userClient, USER_A, { email: "user@example.com" });
+
+    vi.mocked(createOrFetchCustomer).mockResolvedValue({ id: "cust_1", email: "user@example.com" });
+    vi.mocked(createSubscription).mockResolvedValue({
+      id: "sub_new_3b",
+      plan_id: "plan_pro",
+      status: "created",
+      current_end: null,
+    });
+
+    await createCheckoutSession(userClient, USER_A, "pro");
+
+    expect(createSubscription).not.toHaveBeenCalledWith(
+      expect.anything(),
       expect.objectContaining({ totalCount: 1200 }),
     );
   });
 
-  it("respects an explicit RAZORPAY_SUBSCRIPTION_TOTAL_COUNT override", async () => {
+  it("respects an explicit RAZORPAY_SUBSCRIPTION_TOTAL_COUNT=120 override", async () => {
+    setConfigEnv();
+    process.env["RAZORPAY_SUBSCRIPTION_TOTAL_COUNT"] = "120";
+    const userClient = createFakeSupabase();
+    seedProfile(userClient, USER_A, { email: "user@example.com" });
+
+    vi.mocked(createOrFetchCustomer).mockResolvedValue({ id: "cust_1", email: "user@example.com" });
+    vi.mocked(createSubscription).mockResolvedValue({
+      id: "sub_new_4",
+      plan_id: "plan_pro",
+      status: "created",
+      current_end: null,
+    });
+
+    await createCheckoutSession(userClient, USER_A, "pro");
+
+    expect(createSubscription).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ totalCount: 120 }),
+    );
+  });
+
+  it("respects an explicit RAZORPAY_SUBSCRIPTION_TOTAL_COUNT override to a different value", async () => {
     setConfigEnv();
     process.env["RAZORPAY_SUBSCRIPTION_TOTAL_COUNT"] = "24";
     const userClient = createFakeSupabase();
@@ -131,7 +175,7 @@ describe("createCheckoutSession", () => {
 
     vi.mocked(createOrFetchCustomer).mockResolvedValue({ id: "cust_1", email: "user@example.com" });
     vi.mocked(createSubscription).mockResolvedValue({
-      id: "sub_new_4",
+      id: "sub_new_4b",
       plan_id: "plan_pro",
       status: "created",
       current_end: null,
