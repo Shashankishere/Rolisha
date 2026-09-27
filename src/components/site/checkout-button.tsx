@@ -1,20 +1,21 @@
-import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { loadRazorpayCheckout } from "@/lib/payments/razorpay-checkout";
-import { createCheckoutSession, verifyCheckoutSession } from "@/lib/payments/checkout.functions";
+import { useProCheckout } from "@/lib/payments/use-pro-checkout";
 
 /**
- * Real checkout, gated to signed-in users. Signed-out visitors are sent to
- * sign up first (checkout needs an account to attach the subscription
- * to). A client "payment succeeded" callback is never treated as final —
+ * Real checkout, gated to signed-in users. A signed-out visitor is sent to
+ * sign up first (checkout needs an account to attach the subscription to) --
+ * but their intent to buy Pro is preserved through the `redirect`/`checkout`
+ * search params on `/auth`, so completing signup (or logging in, for an
+ * existing Free user) lands them back on `/pricing?checkout=pro`, which
+ * automatically resumes this same checkout flow (see the pricing route's
+ * auto-checkout effect) instead of dropping them on the dashboard. A client
+ * "payment succeeded" callback is never treated as final --
  * `verifyCheckoutSession` re-derives the signature server-side, and the
- * webhook remains the durable source of truth regardless of what happens
- * in this component.
+ * webhook remains the durable source of truth regardless of what happens in
+ * this component.
  */
 export function CheckoutButton({
   planTier,
@@ -27,63 +28,17 @@ export function CheckoutButton({
 }) {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { startCheckout, isProcessing } = useProCheckout();
 
-  async function handleClick() {
+  function handleClick() {
     if (!user) {
-      navigate({ to: "/auth", search: { mode: "signup" } });
+      navigate({
+        to: "/auth",
+        search: { mode: "signup", redirect: "/pricing", checkout: planTier },
+      });
       return;
     }
-
-    setIsProcessing(true);
-    try {
-      await loadRazorpayCheckout();
-      const session = await createCheckoutSession({ data: { planTier } });
-
-      if (!window.Razorpay) throw new Error("Could not load the payment widget.");
-
-      const checkout = new window.Razorpay({
-        key: session.razorpayKeyId,
-        subscription_id: session.razorpaySubscriptionId,
-        name: "Rolisha",
-        description: "Pro subscription",
-        prefill: { email: user.email ?? undefined },
-        handler: (response) => {
-          void (async () => {
-            try {
-              const result = await verifyCheckoutSession({
-                data: {
-                  razorpayPaymentId: response.razorpay_payment_id,
-                  razorpaySubscriptionId: response.razorpay_subscription_id,
-                  razorpaySignature: response.razorpay_signature,
-                },
-              });
-              if (result.verified) {
-                toast.success("Payment verified — your plan is now active.");
-                await queryClient.invalidateQueries({ queryKey: ["subscription-status"] });
-                navigate({ to: "/dashboard" });
-              } else {
-                toast.error(
-                  "We couldn't verify that payment. If money was deducted, it will be reconciled automatically shortly, or contact support.",
-                );
-              }
-            } finally {
-              setIsProcessing(false);
-            }
-          })();
-        },
-        modal: { ondismiss: () => setIsProcessing(false) },
-      });
-      checkout.on("payment.failed", (resp) => {
-        toast.error(resp.error?.description ?? "Payment failed. Please try again.");
-        setIsProcessing(false);
-      });
-      checkout.open();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not start checkout.");
-      setIsProcessing(false);
-    }
+    void startCheckout();
   }
 
   return (

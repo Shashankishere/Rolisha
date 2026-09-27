@@ -100,6 +100,60 @@ describe("createCheckoutSession", () => {
 
     await expect(createCheckoutSession(userClient, USER_A, "pro")).rejects.toThrow(/configured/i);
   });
+
+  it("passes Razorpay's supported maximum total_count (100 years of monthly cycles) by default", async () => {
+    setConfigEnv();
+    delete process.env["RAZORPAY_SUBSCRIPTION_TOTAL_COUNT"];
+    const userClient = createFakeSupabase();
+    seedProfile(userClient, USER_A, { email: "user@example.com" });
+
+    vi.mocked(createOrFetchCustomer).mockResolvedValue({ id: "cust_1", email: "user@example.com" });
+    vi.mocked(createSubscription).mockResolvedValue({
+      id: "sub_new_3",
+      plan_id: "plan_pro",
+      status: "created",
+      current_end: null,
+    });
+
+    await createCheckoutSession(userClient, USER_A, "pro");
+
+    expect(createSubscription).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ totalCount: 1200 }),
+    );
+  });
+
+  it("respects an explicit RAZORPAY_SUBSCRIPTION_TOTAL_COUNT override", async () => {
+    setConfigEnv();
+    process.env["RAZORPAY_SUBSCRIPTION_TOTAL_COUNT"] = "24";
+    const userClient = createFakeSupabase();
+    seedProfile(userClient, USER_A, { email: "user@example.com" });
+
+    vi.mocked(createOrFetchCustomer).mockResolvedValue({ id: "cust_1", email: "user@example.com" });
+    vi.mocked(createSubscription).mockResolvedValue({
+      id: "sub_new_4",
+      plan_id: "plan_pro",
+      status: "created",
+      current_end: null,
+    });
+
+    await createCheckoutSession(userClient, USER_A, "pro");
+
+    expect(createSubscription).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ totalCount: 24 }),
+    );
+  });
+
+  it("refuses to start a new Pro checkout for a user who is already Pro", async () => {
+    setConfigEnv();
+    const userClient = createFakeSupabase();
+    seedProfile(userClient, USER_A, { email: "user@example.com", plan: "pro" });
+
+    await expect(createCheckoutSession(userClient, USER_A, "pro")).rejects.toThrow(/already.*pro/i);
+    expect(createOrFetchCustomer).not.toHaveBeenCalled();
+    expect(createSubscription).not.toHaveBeenCalled();
+  });
 });
 
 describe("verifyCheckoutSession", () => {

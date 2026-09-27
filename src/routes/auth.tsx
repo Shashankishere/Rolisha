@@ -18,6 +18,14 @@ const DESCRIPTION =
 const searchSchema = z.object({
   mode: z.enum(["login", "signup"]).optional(),
   redirect: z.string().optional(),
+  /** Checkout intent to resume once the user is authenticated -- e.g. a
+   * signed-out visitor who clicked "Upgrade to Pro" on the pricing page.
+   * Deliberately a closed enum (not an arbitrary string) validated by zod:
+   * an unrecognized value is silently dropped rather than trusted, same as
+   * `redirect` below is restricted to internal paths by `safePath`. Never
+   * holds anything payment-sensitive -- just a flag naming which plan to
+   * resume checkout for. */
+  checkout: z.enum(["pro"]).optional(),
 });
 
 export const Route = createFileRoute("/auth")({
@@ -58,9 +66,27 @@ function AuthPage() {
 
   const destination = safePath(search.redirect);
 
+  // Full destination URL (absolute, since it crosses the Google OAuth /
+  // email-confirmation redirect and must be recognized by the browser
+  // outside the router) with checkout intent folded back in as a query
+  // param -- built from the already-validated internal `destination` path,
+  // never from anything else in the URL, so this can't be turned into an
+  // open redirect. Only ever called from browser event handlers (never
+  // during SSR), same as the existing `window.location.origin` uses below.
+  function destinationUrl(): string {
+    const url = new URL(destination, window.location.origin);
+    if (search.checkout) url.searchParams.set("checkout", search.checkout);
+    return url.toString();
+  }
+
   useEffect(() => {
-    if (!loading && user) navigate({ to: destination });
-  }, [loading, user, destination, navigate]);
+    if (!loading && user) {
+      navigate({
+        to: destination,
+        search: search.checkout ? { checkout: search.checkout } : {},
+      });
+    }
+  }, [loading, user, destination, search.checkout, navigate]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -76,7 +102,7 @@ function AuthPage() {
           email: parsed.data.email,
           password: parsed.data.password,
           options: {
-            emailRedirectTo: `${window.location.origin}${destination}`,
+            emailRedirectTo: destinationUrl(),
             data: { full_name: fullName.trim().slice(0, 100) },
           },
         });
@@ -114,7 +140,7 @@ function AuthPage() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}${destination}`,
+          redirectTo: destinationUrl(),
         },
       });
       if (error) {

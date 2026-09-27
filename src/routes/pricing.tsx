@@ -1,6 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Check } from "lucide-react";
-import { useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Sparkles } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { MarketingPage, PageHero } from "@/components/site/marketing-page";
 import { CheckoutButton } from "@/components/site/checkout-button";
 import { Button } from "@/components/ui/button";
@@ -12,13 +14,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/hooks/useAuth";
+import { useProCheckout } from "@/lib/payments/use-pro-checkout";
+import { getSubscriptionStatus } from "@/lib/subscription.functions";
 import { formatPrice, REGION_PRICING, type RegionCode, type RegionPricing } from "@/lib/pricing";
 
 const TITLE = "Pricing — Rolisha";
 const DESCRIPTION =
   "Start free with one career roadmap and a full skill gap analysis. Upgrade for unlimited roadmaps, assessments, advanced matching and the application tracker.";
 
+const searchSchema = z.object({
+  /** Set by the auth flow after a signed-out visitor clicked "Upgrade to
+   * Pro", signed up or logged in, and was sent back here (see
+   * CheckoutButton and routes/auth.tsx). When present, this page resumes
+   * checkout automatically instead of making them click Upgrade again. */
+  checkout: z.enum(["pro"]).optional(),
+});
+
 export const Route = createFileRoute("/pricing")({
+  validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: TITLE },
@@ -114,6 +128,11 @@ const COMPARISON_ROWS: {
 ];
 
 function PricingPage() {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const { startCheckout } = useProCheckout();
+
   // India is the default region — a deliberate product decision (this is
   // Rolisha's primary, only fully-live-checkout market), not a guess. It
   // is never silently overridden by a browser-locale detection effect: a
@@ -132,6 +151,52 @@ function PricingPage() {
   // exist yet for them.
   const checkoutAvailable = regionCode === "IN";
   const plans = buildPlans(region, checkoutAvailable);
+
+  // Reuses the exact same query key every other authenticated page reads
+  // (see subscription-panel.tsx, settings.tsx, dashboard.tsx, ...) so the
+  // checkout button's `invalidateQueries(["subscription-status"])` call
+  // after a successful payment also refreshes this page, and so a Pro user
+  // never sees "Upgrade to Pro" here again after checkout completes. Only
+  // enabled when signed in -- this page is public and gets no subscription
+  // data at all for a signed-out visitor.
+  const { data: subscriptionStatus } = useQuery({
+    queryKey: ["subscription-status"],
+    queryFn: () => getSubscriptionStatus(),
+    enabled: !!user,
+  });
+  const userPlan = subscriptionStatus?.plan ?? null;
+
+  // Resumes checkout automatically for a visitor who clicked "Upgrade to
+  // Pro" while signed out, then signed up/logged in and was sent back here
+  // with `?checkout=pro` (see CheckoutButton and routes/auth.tsx). Fires at
+  // most once per visit to this URL: the ref guards against React effects
+  // re-running, and the search param is cleared immediately so an abandoned
+  // or completed checkout is never repeated on refresh/back-navigation, and
+  // so a user who is already Pro (e.g. purchased in another tab) never has
+  // a second Pro checkout started for them.
+  const attemptedAutoCheckout = useRef(false);
+  useEffect(() => {
+    if (search.checkout !== "pro") return;
+    if (authLoading || !user) return; // wait for the session to resolve
+    if (subscriptionStatus === undefined) return; // wait for the plan to load
+    if (attemptedAutoCheckout.current) return;
+    attemptedAutoCheckout.current = true;
+
+    void navigate({ to: "/pricing", search: {}, replace: true });
+
+    if (userPlan !== "pro" && checkoutAvailable) {
+      void startCheckout();
+    }
+  }, [
+    search.checkout,
+    authLoading,
+    user,
+    subscriptionStatus,
+    userPlan,
+    checkoutAvailable,
+    navigate,
+    startCheckout,
+  ]);
 
   return (
     <MarketingPage>
@@ -189,7 +254,19 @@ function PricingPage() {
                   </li>
                 ))}
               </ul>
-              {plan.tier !== "free" && checkoutAvailable ? (
+              {plan.tier !== "free" && userPlan === "pro" ? (
+                <div className="mt-8 space-y-2">
+                  <Button className="w-full" variant="secondary" disabled>
+                    Current Plan
+                  </Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to="/settings">
+                      <Sparkles className="size-4" />
+                      Manage Subscription
+                    </Link>
+                  </Button>
+                </div>
+              ) : plan.tier !== "free" && checkoutAvailable ? (
                 <CheckoutButton
                   planTier={plan.tier}
                   label={plan.cta}

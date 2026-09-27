@@ -23,7 +23,20 @@ import {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Client = any;
 
-const DEFAULT_TOTAL_COUNT = 120; // 10 years of monthly cycles; cancellation is explicit via the Cancel action.
+// Razorpay's Create Subscription API requires `total_count` (a subscription
+// cannot be created without a finite number of billing cycles) and states it
+// supports subscriptions "for a maximum duration of 100 years" -- there is no
+// documented, unconditional way to make a monthly Razorpay subscription bill
+// literally forever. Rolisha's product model IS "bill monthly until the user
+// cancels" (see the Cancel action in the Settings billing panel), so this
+// uses Razorpay's own supported maximum (100 years of monthly cycles) rather
+// than an arbitrary shorter window: it's long enough that no real subscriber
+// will ever reach it, while still being an honest number we can actually
+// pass to the API. This is a per-subscription value sent on creation, not a
+// property of the Razorpay Dashboard plan (`RAZORPAY_PLAN_ID_PRO`), so
+// raising it here does not require -- and cannot be achieved by -- any
+// change to the plan configured in the Razorpay Dashboard.
+const DEFAULT_TOTAL_COUNT = 1200; // 100 years of monthly cycles (Razorpay's documented max).
 
 export interface CheckoutSession {
   razorpaySubscriptionId: string;
@@ -44,6 +57,16 @@ export async function createCheckoutSession(
     throw new RazorpayNotConfiguredError(
       `Payments aren't fully configured yet: no Razorpay plan is set for ${planTier}.`,
     );
+  }
+
+  // Defense in depth: the pricing UI already hides/disables the checkout
+  // action for a user who is already on this plan (see routes/pricing.tsx),
+  // but the backend -- not the client -- remains the source of truth, so a
+  // replayed or hand-crafted request can't create a redundant subscription.
+  const { getUserPlan } = await import("@/lib/subscription.server");
+  const currentPlan = await getUserPlan(supabase, userId);
+  if (currentPlan === planTier) {
+    throw new Error(`You're already on the ${planTier === "pro" ? "Pro" : planTier} plan.`);
   }
 
   const { data: profile, error: profileError } = await supabase
