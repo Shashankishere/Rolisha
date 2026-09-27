@@ -30,3 +30,6 @@ pnpm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+# Cloudflare local secrets
+.dev.vars
+.dev.vars.*
