@@ -1273,9 +1273,7 @@ service layer for API/database logic
 environment variables
 
 clear naming
-
 comments only where useful
-
 Do not create one giant component.
 
 Do not duplicate logic.
