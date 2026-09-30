@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 
 const TITLE = "Features — Rolisha career intelligence";
 const DESCRIPTION =
-  "Skill gap matrices, a six month roadmap engine, job matching with a transparent score, assessments, projects and an application tracker.";
+  "Skill gap matrices, a six month roadmap engine, job matching with a transparent score, assessments and projects.";
 
 export const Route = createFileRoute("/features")({
   head: () => ({
@@ -62,7 +62,7 @@ const GROUPS: FeatureGroup[] = [
       {
         icon: Database,
         title: "Job market intelligence",
-        body: "Jobs analysed, most requested skills, salary range, remote availability and top locations — computed from stored postings and labelled by data mode.",
+        body: "Jobs analysed, most requested skills, salary range, remote availability and top locations — computed from stored postings and shown only when live job data is available.",
       },
     ],
   },

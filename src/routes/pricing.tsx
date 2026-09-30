@@ -16,12 +16,12 @@ import {
 } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useProCheckout } from "@/lib/payments/use-pro-checkout";
+import { PRO_CAREER_ROADMAPS } from "@/lib/subscription";
 import { getSubscriptionStatus } from "@/lib/subscription.functions";
 import { formatPrice, REGION_PRICING, type RegionCode, type RegionPricing } from "@/lib/pricing";
 
 const TITLE = "Pricing — Rolisha";
-const DESCRIPTION =
-  "Start free with one career roadmap and a full skill gap analysis. Upgrade for unlimited roadmaps, assessments, advanced matching and the application tracker.";
+const DESCRIPTION = `Start free with one career roadmap and a basic skill gap analysis. Upgrade to Pro for the full roadmap, up to ${PRO_CAREER_ROADMAPS} career roadmaps, unlimited learning and projects, advanced matching and the resume and interview tools.`;
 
 const searchSchema = z.object({
   /** Set by the auth flow after a signed-out visitor clicked "Upgrade to

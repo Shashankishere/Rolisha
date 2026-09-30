@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   BarChart3,
@@ -22,6 +23,9 @@ import { ProjectWorkspacePreview } from "@/components/marketing/project-workspac
 import { Reveal } from "@/components/app/reveal";
 import { TiltCard } from "@/components/app/tilt-card";
 import { AnimatedNumber } from "@/components/app/animated-number";
+import { getCatalogStats } from "@/lib/catalog.functions";
+import type { CatalogStats } from "@/lib/catalog-stats";
+import { PRO_CAREER_ROADMAPS } from "@/lib/subscription";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -34,7 +38,19 @@ const TITLE = "Rolisha — Stop guessing what to learn";
 const DESCRIPTION =
   "Rolisha compares your skills with real job requirements and builds a personalised six month roadmap to help you become job ready.";
 
+// Catalogue counts come from the live catalogue (see catalog-stats.ts for what
+// each number means) rather than hardcoded figures that drift as careers and
+// skills are added. The loader never fails the homepage: if the read errors,
+// the three catalogue stats are simply omitted rather than showing a wrong
+// or placeholder number.
+const catalogStatsQuery = queryOptions({
+  queryKey: ["catalog-stats"],
+  queryFn: () => getCatalogStats(),
+  staleTime: 5 * 60_000,
+});
+
 export const Route = createFileRoute("/")({
+  loader: ({ context }) => context.queryClient.ensureQueryData(catalogStatsQuery).catch(() => null),
   head: () => ({
     meta: [
       { title: TITLE },
@@ -50,7 +66,7 @@ const STEPS = [
   {
     icon: Target,
     title: "Tell us your target role",
-    body: "Pick from eight supported career paths or enter your own. We load the skill profile employers ask for.",
+    body: "Pick from our supported career paths or enter your own. We load the skill profile employers ask for.",
   },
   {
     icon: Radar,
@@ -78,7 +94,7 @@ const FEATURES = [
   {
     icon: Database,
     title: "Real job intelligence",
-    body: "Requirements come from job postings stored in the product, always labelled with their data mode.",
+    body: "Skill requirements come from the profile mapped to each career path, and job matches use live postings from our ingestion feed when they are available.",
   },
   {
     icon: FolderGit2,
@@ -97,17 +113,29 @@ const FEATURES = [
   },
 ];
 
-const STATS = [
-  { value: 8, suffix: "", label: "Supported career paths" },
-  { value: 50, suffix: "+", label: "Skills tracked in the catalogue" },
-  { value: 47, suffix: "", label: "Skills with real learning content" },
-  { value: 6, suffix: " months", label: "Roadmap horizon per plan" },
-];
+// The roadmap horizon is intentionally fixed: `roadmap.server.ts` is a
+// deterministic six month engine (month 6 is the final month), so this is a
+// property of the product, not a catalogue count that can drift.
+const ROADMAP_HORIZON_STAT = { value: 6, suffix: " months", label: "Roadmap horizon per plan" };
+
+function buildStats(catalog: CatalogStats | null | undefined) {
+  if (!catalog) return [ROADMAP_HORIZON_STAT];
+  return [
+    { value: catalog.careerPaths, suffix: "", label: "Supported career paths" },
+    { value: catalog.skills, suffix: "", label: "Skills tracked in the catalogue" },
+    {
+      value: catalog.skillsWithLearningContent,
+      suffix: "",
+      label: "Skills with real learning content",
+    },
+    ROADMAP_HORIZON_STAT,
+  ];
+}
 
 const FAQ = [
   {
     q: "Where do the job requirements come from?",
-    a: "From job postings stored in the product's database and the skill profiles mapped to each career path. Everything in the app is labelled with its data mode, so you always know whether you are looking at sample data or live job listings.",
+    a: "Skill requirements come from the skill profiles mapped to each career path in our catalogue. Job listings come from our live job-ingestion feed and are stored in the product's database, so they reflect real postings whenever the feed has them. If no live listings are available, the Jobs page tells you rather than presenting anything as live.",
   },
   {
     q: "Is the readiness score just a guess?",
@@ -115,7 +143,7 @@ const FAQ = [
   },
   {
     q: "Do I need to pay to get a roadmap?",
-    a: "The free plan includes one career roadmap, the skill gap analysis and a limited set of job matches. Paid plans add unlimited roadmaps, assessments and the application tracker.",
+    a: `No. The Free plan includes one career roadmap, a basic skill gap analysis and basic job discovery. Pro adds the full roadmap, up to ${PRO_CAREER_ROADMAPS} career roadmaps, unlimited learning and projects, all assessments, advanced job matching and the resume and interview tools.`,
   },
   {
     q: "What if my target role is not listed?",
@@ -128,6 +156,8 @@ const FAQ = [
 ];
 
 function Landing() {
+  const { data: catalogStats } = useQuery(catalogStatsQuery);
+  const stats = buildStats(catalogStats);
   return (
     <MarketingPage>
       {/* HERO */}
@@ -183,10 +213,10 @@ function Landing() {
       {/* ANIMATED STATS STRIP */}
       <section className="border-border/70 bg-surface border-b">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4">
-          {STATS.map((stat, i) => (
+          {stats.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 90} className="text-center md:text-left">
               <p className="font-display text-3xl font-semibold sm:text-4xl">
-                <AnimatedNumber value={stat.value} suffix={stat.suffix} />
+                <AnimatedNumber key={stat.value} value={stat.value} suffix={stat.suffix} />
               </p>
               <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{stat.label}</p>
             </Reveal>

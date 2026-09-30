@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { CareerDetail, CareerSkillRow, CareerSummary } from "@/lib/catalog-types";
+import type { CatalogStats } from "@/lib/catalog-stats";
 import type { ProficiencyLevel, SkillImportance } from "@/lib/domain";
 
 export const listCareers = createServerFn({ method: "GET" }).handler(
@@ -25,6 +27,46 @@ export const listCareers = createServerFn({ method: "GET" }).handler(
       currency: row.salary_currency ?? null,
       skillCount: (row.career_skills as { id: string }[] | null)?.length ?? 0,
     }));
+  },
+);
+
+/**
+ * Live catalogue counts for the homepage stats strip. Reads the same
+ * public-read tables (RLS already allows anonymous SELECT on them) as the
+ * career pages, so the homepage can never drift from the real catalogue.
+ * What each number means is defined in `catalog-stats.ts`.
+ *
+ * Note: the learning-topic read is one row per topic (currently one per
+ * skill), so it stays well under PostgREST's default 1000-row response cap;
+ * if the catalogue ever outgrows that, this needs paging or an RPC.
+ */
+export const getCatalogStats = createServerFn({ method: "GET" }).handler(
+  async (): Promise<CatalogStats> => {
+    const { createPublicServerClient } = await import("@/lib/supabase-public.server");
+    const { computeCatalogStats } = await import("@/lib/catalog-stats");
+    const supabase = createPublicServerClient();
+
+    const [careers, skills, topics] = await Promise.all([
+      supabase.from("careers").select("id", { count: "exact", head: true }).eq("is_active", true),
+      supabase.from("skills").select("id", { count: "exact", head: true }),
+      // `learning_topics` isn't in the generated Database types yet; every other
+      // learning read (learning.server.ts, roadmap.server.ts) uses the same
+      // untyped-client view of it.
+      (supabase as unknown as SupabaseClient<never, never, never>)
+        .from("learning_topics")
+        .select("skill_id, learning_lessons(id)"),
+    ]);
+    if (careers.error || skills.error || topics.error) {
+      throw new Error("Unable to load catalogue statistics right now.");
+    }
+    return computeCatalogStats({
+      activeCareerCount: careers.count,
+      skillCount: skills.count,
+      topics: (topics.data ?? []) as {
+        skill_id: string;
+        learning_lessons: { id: string }[] | null;
+      }[],
+    });
   },
 );
 
