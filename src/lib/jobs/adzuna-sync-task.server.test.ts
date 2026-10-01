@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createFakeSupabase, type FakeSupabase } from "./__tests__/fake-supabase";
-import { runAdzunaSyncTask, getSyncHistory } from "@/lib/jobs/adzuna-sync-task.server";
+import {
+  runAdzunaSyncTask,
+  getSyncHistory,
+  resolveSyncConfig,
+} from "@/lib/jobs/adzuna-sync-task.server";
 import { USER_A, USER_B } from "./__tests__/fixtures";
 
 const SKILL_SQL = "skill-sql";
@@ -326,5 +330,49 @@ describe("getSyncHistory", () => {
     } finally {
       errorSpy.mockRestore();
     }
+  });
+});
+
+describe("resolveSyncConfig: per-run job limit", () => {
+  it("defaults maxJobs to 20 when no override is set", () => {
+    delete process.env["ADZUNA_SYNC_MAX_JOBS"];
+    expect(resolveSyncConfig(process.env).maxJobs).toBe(20);
+  });
+
+  it("never defaults maxJobs to the old 50 -- regression guard against reverting the lowered batch size", () => {
+    delete process.env["ADZUNA_SYNC_MAX_JOBS"];
+    expect(resolveSyncConfig(process.env).maxJobs).not.toBe(50);
+  });
+
+  it("still respects an explicit ADZUNA_SYNC_MAX_JOBS override", () => {
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "35" }).maxJobs).toBe(35);
+  });
+
+  it("still falls back to the default (now 20, not 50) for blank or invalid override values", () => {
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "" }).maxJobs).toBe(20);
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "not-a-number" }).maxJobs).toBe(20);
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "0" }).maxJobs).toBe(20);
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "-5" }).maxJobs).toBe(20);
+  });
+});
+
+describe("an automatic run actually requests only 20 jobs end-to-end (not just at the config layer)", () => {
+  it("stops after one page of 20 when no maxJobs override is passed", async () => {
+    setConfigEnv();
+    const fake = createFakeSupabase();
+    seedCatalog(fake);
+    const fullPage = Array.from({ length: 20 }, (_, i) => ({
+      id: i + 1,
+      title: "Data Analyst",
+      company: { display_name: "Globex" },
+    }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ results: fullPage, count: 500 }));
+
+    const summary = await runAdzunaSyncTask(fake, { trigger: "scheduled" });
+
+    expect(summary.fetched).toBe(20);
+    // Adzuna's per-page ceiling is 50, so 20 fits on page 1 -- a second page
+    // must never be requested for the default automatic run.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

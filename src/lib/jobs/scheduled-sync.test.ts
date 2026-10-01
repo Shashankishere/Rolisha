@@ -440,12 +440,15 @@ describe("salary refresh and duplicate prevention across scheduled runs", () => 
 
 describe("environment / configuration handling", () => {
   it("resolveSyncConfig: blank or invalid ADZUNA_SYNC_MAX_JOBS falls back to the default instead of 0/NaN", () => {
-    expect(resolveSyncConfig({}).maxJobs).toBe(50);
-    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "" }).maxJobs).toBe(50); // was 0 -> fetched 1 job
-    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "   " }).maxJobs).toBe(50);
-    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "abc" }).maxJobs).toBe(50); // was NaN -> fetched 0 jobs
-    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "0" }).maxJobs).toBe(50);
-    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "-5" }).maxJobs).toBe(50);
+    // Default lowered from 50 to 20 (production batch-size change); the
+    // blank/invalid/zero/negative inputs must still fall back to whatever
+    // the current default is, never to 0 or NaN.
+    expect(resolveSyncConfig({}).maxJobs).toBe(20);
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "" }).maxJobs).toBe(20); // was 0 -> fetched 1 job
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "   " }).maxJobs).toBe(20);
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "abc" }).maxJobs).toBe(20); // was NaN -> fetched 0 jobs
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "0" }).maxJobs).toBe(20);
+    expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "-5" }).maxJobs).toBe(20);
     expect(resolveSyncConfig({ ADZUNA_SYNC_MAX_JOBS: "25" }).maxJobs).toBe(25);
   });
 
@@ -459,7 +462,7 @@ describe("environment / configuration handling", () => {
     ).toMatchObject({ query: null, location: null, country: "gb" });
   });
 
-  it("a BLANK ADZUNA_SYNC_MAX_JOBS still fetches a full page (regression: it used to fetch 1 job)", async () => {
+  it("a BLANK ADZUNA_SYNC_MAX_JOBS still fetches a full default-sized page (regression: it used to fetch 1 job)", async () => {
     const fake = freshDb();
     process.env["ADZUNA_SYNC_MAX_JOBS"] = "";
     fetchMock.mockResolvedValueOnce(jsonResponse({ results: [adzunaJob()], count: 1 }));
@@ -467,7 +470,7 @@ describe("environment / configuration handling", () => {
     await runAdzunaSyncTask(fake, { trigger: "scheduled" });
 
     const url = new URL(String(fetchMock.mock.calls[0]![0]));
-    expect(url.searchParams.get("results_per_page")).toBe("50");
+    expect(url.searchParams.get("results_per_page")).toBe("20");
   });
 
   it("uses the India-first default market and honours ADZUNA_SYNC_COUNTRY / ADZUNA_API_KEY alias", async () => {

@@ -99,9 +99,13 @@ async function deactivateStaleJobs(supabaseAdmin: AdminClient, sourceId: string)
   return (data ?? []).length;
 }
 
-/** Default and ceiling for the automatic run's job count (the adapter has its
- * own hard cap of 100 as well). */
-const DEFAULT_SYNC_MAX_JOBS = 50;
+/** Default job count for an automatic (scheduled/cron_http) run, overridable
+ * via `ADZUNA_SYNC_MAX_JOBS` (the adapter also enforces its own hard cap of
+ * 100 regardless of this value). Lowered from 50 to 20 to reduce load on
+ * Adzuna per run; this does not change pagination -- `MAX_RESULTS_PER_PAGE`
+ * (50, Adzuna's own per-page ceiling) is untouched, and a 20-job run already
+ * completes within a single page. */
+const DEFAULT_SYNC_MAX_JOBS = 20;
 
 /**
  * Reads the optional `ADZUNA_SYNC_*` search-scope variables defensively.

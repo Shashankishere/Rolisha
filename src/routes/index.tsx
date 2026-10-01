@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useQuery } from "@tanstack/react-query";
 import {
   ArrowRight,
   BarChart3,
@@ -23,8 +22,6 @@ import { ProjectWorkspacePreview } from "@/components/marketing/project-workspac
 import { Reveal } from "@/components/app/reveal";
 import { TiltCard } from "@/components/app/tilt-card";
 import { AnimatedNumber } from "@/components/app/animated-number";
-import { getCatalogStats } from "@/lib/catalog.functions";
-import type { CatalogStats } from "@/lib/catalog-stats";
 import { PRO_CAREER_ROADMAPS } from "@/lib/subscription";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,19 +35,7 @@ const TITLE = "Rolisha — Stop guessing what to learn";
 const DESCRIPTION =
   "Rolisha compares your skills with real job requirements and builds a personalised six month roadmap to help you become job ready.";
 
-// Catalogue counts come from the live catalogue (see catalog-stats.ts for what
-// each number means) rather than hardcoded figures that drift as careers and
-// skills are added. The loader never fails the homepage: if the read errors,
-// the three catalogue stats are simply omitted rather than showing a wrong
-// or placeholder number.
-const catalogStatsQuery = queryOptions({
-  queryKey: ["catalog-stats"],
-  queryFn: () => getCatalogStats(),
-  staleTime: 5 * 60_000,
-});
-
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(catalogStatsQuery).catch(() => null),
   head: () => ({
     meta: [
       { title: TITLE },
@@ -113,24 +98,18 @@ const FEATURES = [
   },
 ];
 
-// The roadmap horizon is intentionally fixed: `roadmap.server.ts` is a
-// deterministic six month engine (month 6 is the final month), so this is a
-// property of the product, not a catalogue count that can drift.
-const ROADMAP_HORIZON_STAT = { value: 6, suffix: " months", label: "Roadmap horizon per plan" };
-
-function buildStats(catalog: CatalogStats | null | undefined) {
-  if (!catalog) return [ROADMAP_HORIZON_STAT];
-  return [
-    { value: catalog.careerPaths, suffix: "", label: "Supported career paths" },
-    { value: catalog.skills, suffix: "", label: "Skills tracked in the catalogue" },
-    {
-      value: catalog.skillsWithLearningContent,
-      suffix: "",
-      label: "Skills with real learning content",
-    },
-    ROADMAP_HORIZON_STAT,
-  ];
-}
+// Fixed headline stats, intentionally not a live catalogue count: the "+"
+// states a floor ("at least this many"), which stays true as the catalogue
+// grows and doesn't depend on a successful database read to render the
+// hero. The roadmap horizon is likewise fixed -- `roadmap.server.ts` is a
+// deterministic six month engine (month 6 is the final month), a property
+// of the product rather than a number that can drift.
+const STATS = [
+  { value: 25, suffix: "+", label: "Supported career paths" },
+  { value: 75, suffix: "+", label: "Skills tracked in the catalogue" },
+  { value: 75, suffix: "+", label: "Skills with real learning content" },
+  { value: 6, suffix: " months", label: "Roadmap horizon per plan" },
+];
 
 const FAQ = [
   {
@@ -156,8 +135,6 @@ const FAQ = [
 ];
 
 function Landing() {
-  const { data: catalogStats } = useQuery(catalogStatsQuery);
-  const stats = buildStats(catalogStats);
   return (
     <MarketingPage>
       {/* HERO */}
@@ -166,7 +143,7 @@ function Landing() {
           <div className="animate-rise">
             <span className="border-border bg-card text-muted-foreground inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium tracking-wide uppercase">
               <Sparkles className="text-primary size-3.5" />
-              AI powered career intelligence
+              Your career path, mapped to what real jobs require.
             </span>
             <h1 className="mt-5 text-4xl font-semibold text-balance sm:text-5xl lg:text-6xl">
               Turn your career goal into{" "}
@@ -212,9 +189,9 @@ function Landing() {
 
       {/* ANIMATED STATS STRIP */}
       <section className="border-border/70 bg-surface border-b">
-        <div className="mx-auto grid w-full max-w-6xl grid-cols-2 gap-6 px-4 py-10 sm:px-6 md:grid-cols-4">
-          {stats.map((stat, i) => (
-            <Reveal key={stat.label} delay={i * 90} className="text-center md:text-left">
+        <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-x-8 gap-y-8 px-4 py-10 text-center sm:px-6 md:grid-cols-4 md:gap-x-12">
+          {STATS.map((stat, i) => (
+            <Reveal key={stat.label} delay={i * 90} className="text-center">
               <p className="font-display text-3xl font-semibold sm:text-4xl">
                 <AnimatedNumber key={stat.value} value={stat.value} suffix={stat.suffix} />
               </p>

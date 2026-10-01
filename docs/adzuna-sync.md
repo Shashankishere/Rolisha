@@ -40,8 +40,8 @@ from the admin UI always let you specify these per click regardless):
 - `ADZUNA_SYNC_QUERY`
 - `ADZUNA_SYNC_LOCATION`
 - `ADZUNA_SYNC_COUNTRY` (default: `in`, same as the adapter's own default)
-- `ADZUNA_SYNC_MAX_JOBS` (default: `50`; a blank, non-numeric or non-positive
-  value falls back to `50` rather than silently fetching 0 or 1 jobs)
+- `ADZUNA_SYNC_MAX_JOBS` (default: `20`; a blank, non-numeric or non-positive
+  value falls back to `20` rather than silently fetching 0 or 1 jobs)
 
 ### How the scheduling mechanism actually works
 

@@ -1,9 +1,9 @@
 /**
  * Public copy must match current product behaviour. Source-reading tests, in
  * the same style as marketing-copy-regressions.test.ts (the runner is
- * Node-only with no DOM). Each assertion protects a *source of truth*, not
- * an arbitrary number: the homepage stats must come from the catalogue
- * query, and plan limits quoted in copy must come from subscription.ts.
+ * Node-only with no DOM). Each assertion protects a *source of truth*
+ * (subscription.ts for plan limits) or an exact, deliberately-chosen
+ * headline value (the fixed catalogue stats), not an arbitrary number.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -22,7 +22,6 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), "utf-8");
 const home = read("src/routes/index.tsx");
 const pricing = read("src/routes/pricing.tsx");
 const features = read("src/routes/features.tsx");
-const catalogFns = read("src/lib/catalog.functions.ts");
 
 describe("plan roadmap limits (Free = 1, Pro = 5, two plans only)", () => {
   it("Free allows exactly 1 roadmap and Pro at most 5", () => {
@@ -41,30 +40,67 @@ describe("plan roadmap limits (Free = 1, Pro = 5, two plans only)", () => {
   });
 });
 
-describe("homepage catalogue statistics come from the catalogue, not hardcoded numbers", () => {
-  it("feeds the stats strip from getCatalogStats", () => {
-    expect(home).toContain("getCatalogStats");
-    expect(home).toContain("catalog.careerPaths");
-    expect(home).toContain("catalog.skills");
-    expect(home).toContain("catalog.skillsWithLearningContent");
+describe("homepage headline statistics are the deliberately-fixed floor values", () => {
+  // These are marketing floors ("at least this many"), not a live catalogue
+  // read -- they stay true as the catalogue grows and don't depend on a
+  // database round trip to render the hero. See routes/index.tsx's STATS.
+  const statsBlock = home.slice(home.indexOf("const STATS ="), home.indexOf("function Landing"));
+
+  it("shows exactly 25+ / 75+ / 75+ / 6 months", () => {
+    expect(statsBlock).toMatch(/value:\s*25,\s*suffix:\s*"\+"/);
+    expect(statsBlock).toMatch(/value:\s*75,\s*suffix:\s*"\+"/);
+    // Both 75+ stats must appear (skills tracked, skills with content).
+    expect([...statsBlock.matchAll(/value:\s*75,\s*suffix:\s*"\+"/g)]).toHaveLength(2);
+    expect(statsBlock).toMatch(/value:\s*6,\s*suffix:\s*" months"/);
   });
 
-  it("no longer hardcodes the old 8 / 50+ / 47 figures", () => {
-    expect(home).not.toMatch(/value:\s*8\b/);
-    expect(home).not.toMatch(/value:\s*50\b/);
-    expect(home).not.toMatch(/value:\s*47\b/);
-    expect(home).not.toMatch(/eight supported career paths/i);
+  it("keeps the four correct labels", () => {
+    expect(statsBlock).toContain('label: "Supported career paths"');
+    expect(statsBlock).toContain('label: "Skills tracked in the catalogue"');
+    expect(statsBlock).toContain('label: "Skills with real learning content"');
+    expect(statsBlock).toContain('label: "Roadmap horizon per plan"');
   });
 
-  it("keeps the roadmap horizon as an intentionally fixed six months", () => {
-    expect(home).toContain('suffix: " months"');
-    expect(home).toContain('label: "Roadmap horizon per plan"');
+  it("no longer shows the old exact-count values (8 / 50+ / 47, or the live-fetched 27 / 79 / 79)", () => {
+    expect(statsBlock).not.toMatch(/value:\s*8,/);
+    expect(statsBlock).not.toMatch(/value:\s*50,/);
+    expect(statsBlock).not.toMatch(/value:\s*47,/);
+    expect(statsBlock).not.toMatch(/value:\s*27,/);
+    expect(statsBlock).not.toMatch(/value:\s*79,/);
   });
 
-  it("counts only active careers, all skills, and skills whose topics have lessons", () => {
-    expect(catalogFns).toMatch(/from\("careers"\)[\s\S]*?\.eq\("is_active", true\)/);
-    expect(catalogFns).toContain('from("skills")');
-    expect(catalogFns).toContain('"skill_id, learning_lessons(id)"');
+  it("does not fetch catalogue stats over the network for the hero", () => {
+    expect(home).not.toContain("getCatalogStats");
+  });
+});
+
+describe("stats strip is a centered group, not spread full-width", () => {
+  const statsSection = home.slice(
+    home.indexOf("ANIMATED STATS STRIP"),
+    home.indexOf("<CareerJourneySection"), // the JSX usage, not the earlier import line
+  );
+
+  it("constrains the row to a narrower, centered container than the full-width hero", () => {
+    expect(statsSection).toMatch(/mx-auto/);
+    expect(statsSection).not.toMatch(/max-w-6xl/);
+  });
+
+  it("centers every stat (no left-aligned override on larger screens)", () => {
+    expect(statsSection).not.toMatch(/md:text-left/);
+  });
+});
+
+describe("hero positioning copy", () => {
+  it('replaces "AI powered career intelligence" with the real-jobs tagline', () => {
+    expect(home).not.toMatch(/AI powered career intelligence/i);
+    expect(home).toContain("Your career path, mapped to what real jobs require.");
+  });
+
+  it("does not strip legitimate descriptions of real AI-powered features elsewhere", () => {
+    // "career intelligence workspace" (features.tsx) describes the actual
+    // analyse/plan/practise/apply/track product, not the removed hero badge
+    // -- it must survive this positioning change.
+    expect(features).toMatch(/career intelligence workspace/i);
   });
 });
 

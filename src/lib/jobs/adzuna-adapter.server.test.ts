@@ -463,17 +463,21 @@ describe("AdzunaJobSourceAdapter — retry/backoff for transient failures", () =
  * after 3 attempts, while manual sync succeeds."
  *
  * Confirmed evidence going in: manual sync with the SAME resolved config
- * production's automatic sync uses (query=null, location=null, country=in,
- * maxJobs=50) succeeds; automatic sync fails. Tracing every call site
- * (createAdzunaAdapterFromEnv -> AdzunaJobSourceAdapter -> fetchPageWithRetry
- * -> buildUrl) shows there is exactly ONE implementation of each, with no
- * branching by trigger type anywhere -- manual and scheduled calls run
- * byte-for-byte the same code. These tests make that verifiable rather than
- * asserted: they prove the constructed request and resolved config are
- * identical regardless of trigger, and pin down exactly which page a
- * maxJobs=50 sync can ever reach. No application-level bug that would
- * explain a manual/automatic behavioral difference was found; see the
- * final report for what that leaves as the likely explanation.
+ * production's automatic sync used at the time (query=null, location=null,
+ * country=in, maxJobs=50) succeeds; automatic sync fails. Tracing every call
+ * site (createAdzunaAdapterFromEnv -> AdzunaJobSourceAdapter ->
+ * fetchPageWithRetry -> buildUrl) shows there is exactly ONE implementation
+ * of each, with no branching by trigger type anywhere -- manual and
+ * scheduled calls run byte-for-byte the same code. These tests make that
+ * verifiable rather than asserted: they prove the constructed request and
+ * resolved config are identical regardless of trigger, and pin down exactly
+ * which page a maxJobs=50 sync can ever reach -- a scenario kept here as a
+ * boundary-condition test of the adapter's own pagination math (50 is
+ * Adzuna's per-page ceiling) even though production's automatic default has
+ * since been lowered to 20 (see adzuna-sync-task.server.ts /
+ * DEFAULT_SYNC_MAX_JOBS). No application-level bug that would explain a
+ * manual/automatic behavioral difference was found; see the final report
+ * for what that leaves as the likely explanation.
  */
 describe("diagnostic: identifying which page/request an error belongs to", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -502,13 +506,15 @@ describe("diagnostic: identifying which page/request an error belongs to", () =>
     await assertion;
   });
 
-  it("with the current maxJobs=50 default, a sync can only ever reach page 1 -- page 2 is architecturally unreachable", async () => {
+  it("at maxJobs=50 (a full single Adzuna page), a sync can only ever reach page 1 -- page 2 is architecturally unreachable", async () => {
     // math: resultsPerPage on page 1 = min(50, maxJobs - 0) = 50. A full
     // page of 50 accepted results brings jobs.length to 50, which equals
     // maxJobs, so `while (jobs.length < this.maxJobs)` is false BEFORE a
-    // page 2 request would ever be made. This directly answers "is the
-    // automatic failure on page 1 or page 2?" for production's actual
-    // configuration: it can only ever be page 1.
+    // page 2 request would ever be made. maxJobs=50 was production's
+    // automatic-sync default at the time of the original 503 investigation
+    // (now lowered to 20, which fits on page 1 even more trivially); this
+    // test is kept as a boundary case of the adapter's own pagination math,
+    // independent of whatever the sync task's current default is.
     const fullPage = Array.from({ length: 50 }, (_, i) => oneResult({ id: i + 1 }));
     fetchMock.mockResolvedValueOnce(jsonResponse({ results: fullPage, count: 200 }));
     const adapter = new AdzunaJobSourceAdapter("id", "key", { maxJobs: 50 });
