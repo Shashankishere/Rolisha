@@ -1,6 +1,6 @@
-# Career Compass AI
+# Rolisha
 
-Build a production-ready full-stack SaaS web application called CareerPath AI.
+Build a production-ready full-stack SaaS web application called Rolisha.
 
 PRODUCT VISION
 
