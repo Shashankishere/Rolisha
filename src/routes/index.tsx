@@ -192,7 +192,7 @@ function Landing() {
         <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-x-8 gap-y-8 px-4 py-10 text-center sm:px-6 md:grid-cols-4 md:gap-x-12">
           {STATS.map((stat, i) => (
             <Reveal key={stat.label} delay={i * 90} className="text-center">
-              <p className="font-display text-3xl font-semibold sm:text-4xl">
+              <p className="font-display text-3xl font-semibold whitespace-nowrap sm:text-4xl">
                 <AnimatedNumber key={stat.value} value={stat.value} suffix={stat.suffix} />
               </p>
               <p className="text-muted-foreground mt-1 text-xs sm:text-sm">{stat.label}</p>
