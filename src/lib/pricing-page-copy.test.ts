@@ -86,6 +86,37 @@ describe("pricing page shows exactly the two current plans", () => {
   });
 });
 
+describe("pricing page is India-only: no region selector, no non-India regions", () => {
+  it("does not render a region/currency selector", () => {
+    expect(pricingSource).not.toMatch(/show pricing for/i);
+    expect(pricingSource).not.toContain("pricing-region");
+    expect(pricingSource).not.toContain("<Select");
+    expect(pricingSource).not.toContain("onValueChange");
+  });
+
+  it("does not import the Select component (nothing else on this page uses it)", () => {
+    expect(pricingSource).not.toMatch(/from\s+"@\/components\/ui\/select"/);
+  });
+
+  it("never mentions the removed US/UK/EU regions or their currencies", () => {
+    expect(pricingSource).not.toMatch(/united states/i);
+    expect(pricingSource).not.toMatch(/united kingdom/i);
+    expect(pricingSource).not.toMatch(/\bUSD\b/);
+    expect(pricingSource).not.toMatch(/\bGBP\b/);
+    expect(pricingSource).not.toMatch(/\$\s*3\.6/); // the old US display price
+  });
+
+  it("always resolves to India/INR -- checkoutAvailable is not conditioned on a selectable region", () => {
+    expect(pricingSource).toContain("REGION_PRICING.IN");
+    expect(pricingSource).toContain("const checkoutAvailable = true");
+    expect(pricingSource).not.toMatch(/useState<RegionCode>/);
+  });
+
+  it("the Pro checkout button is still offered (India checkout was not removed along with the selector)", () => {
+    expect(pricingSource).toContain("<CheckoutButton");
+  });
+});
+
 describe("no development-status wording in the pricing UI", () => {
   it("contains no 'Planned', 'Premium', 'coming soon' or 'nothing is implemented' text", () => {
     expect(pricingSource).not.toMatch(/planned/i);

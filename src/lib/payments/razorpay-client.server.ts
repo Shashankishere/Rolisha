@@ -51,6 +51,16 @@ export function isIdNotFoundError(error: unknown): boolean {
   );
 }
 
+// Rolisha is INR-only. There is deliberately exactly one plan slot (`pro`),
+// pointed at the single Razorpay Dashboard plan (RAZORPAY_PLAN_ID_PRO)
+// configured in INR. Razorpay's Create Subscription API has no `currency`
+// parameter at all -- a subscription's currency is entirely inherited from
+// its plan -- so with one INR plan and no other plan slot to select, the
+// checkout/subscription-creation path cannot produce a non-INR transaction.
+// Adding a second, currency-specific plan here (e.g. a `proUsd`) would be
+// the point at which that guarantee needs to be revisited; see the
+// "exactly one plan slot" and "never sends a currency field" tests in
+// __tests__/razorpay-client.server.test.ts.
 export interface RazorpayConfig {
   keyId: string;
   keySecret: string;

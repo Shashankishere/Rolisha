@@ -1,24 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Check, Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { z } from "zod";
 import { MarketingPage, PageHero } from "@/components/site/marketing-page";
 import { CheckoutButton } from "@/components/site/checkout-button";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { useProCheckout } from "@/lib/payments/use-pro-checkout";
 import { PRO_CAREER_ROADMAPS } from "@/lib/subscription";
 import { getSubscriptionStatus } from "@/lib/subscription.functions";
-import { formatPrice, REGION_PRICING, type RegionCode, type RegionPricing } from "@/lib/pricing";
+import { formatPrice, REGION_PRICING, type RegionPricing } from "@/lib/pricing";
 
 const TITLE = "Pricing — Rolisha";
 const DESCRIPTION = `Start free with one career roadmap and a basic skill gap analysis. Upgrade to Pro for the full roadmap, up to ${PRO_CAREER_ROADMAPS} career roadmaps, unlimited learning and projects, advanced matching and the resume and interview tools.`;
@@ -133,23 +126,14 @@ function PricingPage() {
   const { user, loading: authLoading } = useAuth();
   const { startCheckout } = useProCheckout();
 
-  // India is the default region — a deliberate product decision (this is
-  // Rolisha's primary, only fully-live-checkout market), not a guess. It
-  // is never silently overridden by a browser-locale detection effect: a
-  // prior version of this page did that (via `guessRegion()` in a
-  // `useEffect`), which is exactly why a visitor whose browser reports a
-  // non-`en-IN` locale (e.g. `en-US`, extremely common even for Indian
-  // users) would see the page flip from INR to USD right after mount. The
-  // region shown is now only ever what this state holds — set once here,
-  // changed only by the visitor's own selection below.
-  const [regionCode, setRegionCode] = useState<RegionCode>("IN");
-
-  const region = REGION_PRICING[regionCode];
-  // Real checkout (via Razorpay) is only wired up for India/INR today —
-  // that's the market Razorpay serves natively. Other regions keep the
-  // honest waitlist flow rather than claiming card checkout that doesn't
-  // exist yet for them.
-  const checkoutAvailable = regionCode === "IN";
+  // Rolisha is presented as an India-only product for now: there is no
+  // region selector any more (there used to be one, for India/US/UK/EU —
+  // see pricing.ts), so this page only ever shows the one region that
+  // actually has live Razorpay checkout. `region`/`checkoutAvailable` are
+  // kept as named values rather than inlined so the JSX below still reads
+  // the same way it would if another region were ever reintroduced.
+  const region = REGION_PRICING.IN;
+  const checkoutAvailable = true;
   const plans = buildPlans(region, checkoutAvailable);
 
   // Reuses the exact same query key every other authenticated page reads
@@ -211,24 +195,6 @@ function PricingPage() {
       />
 
       <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <div className="mb-8 flex items-center justify-center gap-3">
-          <label htmlFor="pricing-region" className="text-muted-foreground text-sm">
-            Show pricing for
-          </label>
-          <Select value={regionCode} onValueChange={(v) => setRegionCode(v as RegionCode)}>
-            <SelectTrigger id="pricing-region" className="w-56">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {(Object.keys(REGION_PRICING) as RegionCode[]).map((code) => (
-                <SelectItem key={code} value={code}>
-                  {REGION_PRICING[code].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="mx-auto grid max-w-3xl gap-6 lg:grid-cols-2">
           {plans.map((plan) => (
             <article

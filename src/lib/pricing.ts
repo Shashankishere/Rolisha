@@ -4,10 +4,18 @@
  * This is the single source of truth for what the pricing page (and any
  * other UI that needs to show a plan price) displays. India/INR is the
  * base price — the number that actually gets charged, via the Razorpay
- * plan configured server-side in `RAZORPAY_PLAN_ID_PRO`. Every other
- * region here is a manually-set, approximate conversion kept in this same
- * table rather than computed from a live exchange rate, so the number
- * shown is stable rather than fluctuating with FX markets.
+ * plan configured server-side in `RAZORPAY_PLAN_ID_PRO`.
+ *
+ * Rolisha is presented as an India-only product for now: this table used
+ * to also carry manually-set, approximate US/UK/EU conversions for a
+ * region selector on the pricing page, but Razorpay checkout itself has
+ * only ever been wired up for India/INR (international payments were
+ * never actually accepted), so showing those other regions' prices only
+ * invited customer confusion about what was actually purchasable. They
+ * were removed along with the selector in routes/pricing.tsx. `RegionCode`
+ * and `Record<RegionCode, RegionPricing>` are kept (rather than collapsing
+ * to a single flat INR constant) so that re-introducing another region
+ * later is a data change here, not a rewrite of the pricing page.
  *
  * Rolisha has exactly two user-facing plans, Free and Pro — there used to
  * be a third "Premium" tier above Pro with its own price here; it was
@@ -21,7 +29,7 @@
  * reconciliation between the two.
  */
 
-export type RegionCode = "IN" | "US" | "GB" | "EU";
+export type RegionCode = "IN";
 
 export interface RegionPricing {
   label: string;
@@ -37,19 +45,6 @@ export interface RegionPricing {
  * Update here only. */
 export const REGION_PRICING: Record<RegionCode, RegionPricing> = {
   IN: { label: "India (₹ INR)", currency: "INR", locale: "en-IN", pro: 299 },
-  US: {
-    label: "United States ($ USD)",
-    currency: "USD",
-    locale: "en-US",
-    pro: 3.6,
-  },
-  GB: {
-    label: "United Kingdom (£ GBP)",
-    currency: "GBP",
-    locale: "en-GB",
-    pro: 2.9,
-  },
-  EU: { label: "Europe (€ EUR)", currency: "EUR", locale: "de-DE", pro: 3.3 },
 };
 
 export function formatPrice(amount: number, region: RegionPricing): string {
@@ -60,18 +55,4 @@ export function formatPrice(amount: number, region: RegionPricing): string {
     minimumFractionDigits: amount === 0 || amount % 1 === 0 ? 0 : fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(amount);
-}
-
-/** Best-effort, client-side-only region guess from the browser's locale —
- * never authoritative, always overridable via the region selector, and
- * defaults to India (Rolisha's primary audience and the only region with
- * live Razorpay checkout today) when it can't tell. */
-export function guessRegion(): RegionCode {
-  if (typeof navigator === "undefined") return "IN";
-  const lang = navigator.language || "";
-  if (/-IN$/i.test(lang)) return "IN";
-  if (/-GB$/i.test(lang)) return "GB";
-  if (/-US$/i.test(lang)) return "US";
-  if (/^(de|fr|es|it|nl|pt|pl)/i.test(lang)) return "EU";
-  return "IN";
 }

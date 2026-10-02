@@ -37,6 +37,20 @@ describe("Razorpay configuration", () => {
     expect(isRazorpayConfigured()).toBe(true);
     expect(getRazorpayConfig()?.planIdByTier.pro).toBe("plan_pro");
   });
+
+  // There is exactly one Razorpay plan (RAZORPAY_PLAN_ID_PRO), and it is
+  // configured in INR in the Razorpay Dashboard -- that single plan is the
+  // only thing that determines a subscription's currency (see the test
+  // above: the API request itself never carries a currency). This test
+  // protects the "exactly one plan" structure itself: if a second,
+  // currency-specific plan slot (e.g. a `proUsd`) is ever added here, the
+  // INR-only guarantee this task establishes needs to be deliberately
+  // re-examined, not silently inherited.
+  it("exposes exactly one plan slot (pro) -- no per-currency/per-region plan selection exists", () => {
+    setConfigEnv();
+    const planIdByTier = getRazorpayConfig()?.planIdByTier;
+    expect(Object.keys(planIdByTier ?? {})).toEqual(["pro"]);
+  });
 });
 
 describe("Razorpay API calls", () => {
@@ -89,6 +103,40 @@ describe("Razorpay API calls", () => {
     expect(customer).toEqual({ id: "cust_1", email: "a@b.com" });
     const [url] = fetchMock.mock.calls[0]!;
     expect(String(url)).toContain("/customers/cust_1");
+  });
+
+  // Rolisha is INR-only: Razorpay's Create Subscription API has no
+  // `currency` field at all -- a subscription's currency is entirely
+  // inherited from its `plan_id`'s configuration in the Razorpay Dashboard,
+  // which is where INR is actually enforced (see razorpay-client.server.ts's
+  // planIdByTier and the test below). This test exists so that if a
+  // `currency` field is ever added to this request body in the future (e.g.
+  // someone "helpfully" wiring up a region selector), it fails loudly rather
+  // than silently sending a value Razorpay would just ignore for a
+  // subscription -- or, if Razorpay's API shape ever changes to accept one,
+  // forcing a deliberate decision instead of an accidental non-INR default.
+  it("never sends a currency field when creating a subscription (currency comes from the Dashboard-configured plan only)", async () => {
+    setConfigEnv();
+    const config = getRazorpayConfig()!;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ id: "sub_1", status: "created" }), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await createSubscription(config, { planId: "plan_pro", customerId: "cust_1", totalCount: 120 });
+
+    const [, init] = fetchMock.mock.calls[0]!;
+    const body = JSON.parse(init.body as string);
+    expect(body).not.toHaveProperty("currency");
+    expect(body).toEqual({
+      plan_id: "plan_pro",
+      customer_id: "cust_1",
+      total_count: 120,
+      customer_notify: 1,
+      notes: undefined,
+    });
   });
 
   it("requests cancellation at cycle end by default", async () => {
