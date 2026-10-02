@@ -1,1366 +1,813 @@
 # Rolisha
 
-Build a production-ready full-stack SaaS web application called Rolisha.
+### Your career path, mapped to what real jobs require.
 
-PRODUCT VISION
+<p align="center">
+  <strong>A career roadmap platform that connects career goals, skills, learning, projects, assessments, and real job-market data.</strong>
+</p>
 
-CareerPath AI helps students and early-career professionals understand exactly what they need to learn to qualify for real jobs.
+<p align="center">
+  <a href="https://rolisha.in/">
+    <img src="https://img.shields.io/badge/🚀%20Live%20Demo-rolisha.in-2563EB?style=for-the-badge" alt="Live Demo">
+  </a>
+  <a href="https://github.com/Shashankishere/Rolisha">
+    <img src="https://img.shields.io/badge/💻%20Source%20Code-GitHub-181717?style=for-the-badge&logo=github" alt="Source Code">
+  </a>
+</p>
 
-The core experience is:
+<p align="center">
+  <img src="https://img.shields.io/badge/TypeScript-React-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/TanStack-Start-FF4154?style=for-the-badge" alt="TanStack Start">
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase">
+  <img src="https://img.shields.io/badge/Cloudflare-Wrangler-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare">
+</p>
 
-User enters:
+---
 
-Target job role
+## 🌐 Live Application
 
-Current education
+**Rolisha is deployed and available at:**
 
-Current skills
+### 🚀 https://rolisha.in/
 
-Hours available per week
+The production application is publicly accessible while the complete source code is available on GitHub.
 
-Target salary
+**Source Code:** [github.com/Shashankishere/Rolisha](https://github.com/Shashankishere/Rolisha)
 
-Preferred location
+Keeping the project open-source allows developers and recruiters to explore the implementation while users can experience the deployed application directly.
 
-Experience level
+> 🔒 Production credentials, API keys, and secrets are kept outside the repository and are configured through secure environment/deployment settings.
 
-The application analyzes relevant real-world job requirements and compares them with the user's current skills.
+---
 
-It then generates:
+# 💡 Why "Rolisha"?
 
-A personalized 6-month learning roadmap
+**Rolisha** comes from combining two words:
 
-A skill-gap analysis
+> **Role + Disha = Rolisha**
 
-A weekly learning plan
+**Role** represents the professional career or job role a learner wants to achieve.
 
-Recommended projects
+**Disha** (दिशा) is a Sanskrit/Hindi word meaning **direction**, **path**, or **guidance**.
 
-Recommended resources
+Together:
 
-Internship/job recommendations
+```text
+Role + Disha
+     ↓
+  Rolisha
+     ↓
+Career Direction
+```
 
-A continuously updated "Job Readiness Score"
+The name represents the core idea behind the platform:
 
-A percentage showing how much of the required skill set the user already knows
+> **Helping learners find a clear direction toward their desired career role.**
 
-Example:
+Instead of simply asking *"What should I learn?"*, Rolisha focuses on:
 
-TARGET ROLE
-Data Analyst
+```text
+Where do I want to go?
+          ↓
+What skills does that role require?
+          ↓
+What do I already know?
+          ↓
+What should I learn next?
+          ↓
+What should I build?
+          ↓
+How am I progressing?
+          ↓
+What jobs match my preparation?
+```
 
-CURRENT SKILLS
-Excel, Python basics
+---
 
-ANALYSIS
+# 📸 Screenshots & Demo
 
-You already know 40% of the commonly requested skills.
+> Add your production screenshots to `docs/screenshots/` using the filenames below.
 
-Strong:
-✓ Excel
-✓ Basic Python
+### Landing Page
 
-Needs improvement:
-○ SQL
-○ Statistics
-○ Power BI
-○ Data visualization
-○ Business analytics
+<p align="center">
+  <img src="./docs/screenshots/landing.png" alt="Rolisha Landing Page" width="900">
+</p>
 
-6-MONTH ROADMAP
+### Career Roadmap
 
-Month 1 → Advanced Excel
-Month 2 → SQL
-Month 3 → Statistics
-Month 4 → Power BI
-Month 5 → Data Analyst projects
-Month 6 → Internship + interview preparation
+<p align="center">
+  <img src="./docs/screenshots/roadmap.png" alt="Rolisha Career Roadmap" width="900">
+</p>
 
-The most important feature is that the roadmap must be derived from actual job requirements rather than generic career advice.
+### Dashboard
 
-BRAND
+<p align="center">
+  <img src="./docs/screenshots/dashboard.png" alt="Rolisha Dashboard" width="900">
+</p>
 
-Product name:
-CareerPath AI
+### Job Explorer
 
-Tagline:
-"Stop guessing what to learn. Learn what real jobs require."
+<p align="center">
+  <img src="./docs/screenshots/jobs.png" alt="Rolisha Job Explorer" width="900">
+</p>
 
-Alternative headline:
-"Your career roadmap, built from real job requirements."
+### 🚀 Try the Live Application
 
-Tone:
+<p align="center">
+  <a href="https://rolisha.in/">
+    <img src="https://img.shields.io/badge/🚀%20Try%20Rolisha-Live%20Application-2563EB?style=for-the-badge" alt="Try Rolisha">
+  </a>
+</p>
 
-Modern
+---
 
-Trustworthy
+# 🎯 What is Rolisha?
 
-Student-friendly
+Rolisha is a **career planning and learning platform** designed to help students and early-career professionals turn a career goal into a structured, actionable roadmap.
 
-Professional
+A learner can provide information such as:
 
-Data-driven
+* Education
+* Current skills
+* Target career
+* Available hours per week
+* Target salary
+* Location
 
-Encouraging without being childish
+Rolisha uses these inputs to create a structured career path covering relevant skills, learning topics, projects, assessments, and career preparation.
 
-Do NOT make it look like a generic AI chatbot.
+The platform also incorporates real job-market data so learners can connect their preparation with requirements found in actual job listings.
 
-It should feel like a serious career intelligence SaaS product.
+---
 
-DESIGN SYSTEM
+# ✨ Features
 
-Create a premium modern SaaS interface.
+<table>
+<tr>
+<td width="50%">
 
-Style:
+## 🎯 Personalized Roadmaps
 
-Clean white/light background
+Generate structured career paths based on education, current skills, target role, available time, salary target, and location.
 
-Dark navy text
+</td>
+<td width="50%">
 
-Subtle gradients
+## 🧩 Skill Gap Tracking
 
-Blue/purple accent colors
+Identify skills already known and areas that require additional learning.
 
-Rounded cards
+</td>
+</tr>
 
-Soft shadows
+<tr>
+<td width="50%">
 
-Large readable typography
+## 📚 Learning System
 
-Generous spacing
+Follow structured learning topics and track progress throughout the roadmap.
 
-Minimal but polished animations
+</td>
+<td width="50%">
 
-Use:
+## 💼 Real Job Data
 
-React
+Explore job-market information through an Adzuna-powered job ingestion and normalization pipeline.
 
-TypeScript
+</td>
+</tr>
 
-Tailwind CSS
+<tr>
+<td width="50%">
 
-shadcn/ui
+## 🛠️ Projects
 
-Lucide icons
+Build practical projects alongside learning to turn knowledge into demonstrable work.
 
-Recharts
+</td>
+<td width="50%">
 
-The UI must be responsive for:
+## 📝 Assessments
 
-Desktop
+Complete assessments to reinforce concepts and track learning progress.
 
-Tablet
+</td>
+</tr>
 
-Mobile
+<tr>
+<td width="50%">
 
-Use accessible contrast and keyboard navigation.
+## 📊 Progress Dashboard
 
-Add tasteful Framer Motion-style animations where appropriate, but do not over-animate.
+Monitor roadmaps, skills, learning, projects, assessments, and career preparation from one place.
 
-PUBLIC WEBSITE
+</td>
+<td width="50%">
 
-Create these public pages:
+## 🔐 Authentication
 
-/
-Landing page
+Secure authentication with Supabase, protected routes, and Google OAuth support.
 
-/features
-Product features
+</td>
+</tr>
 
-/how-it-works
-How CareerPath AI works
+<tr>
+<td width="50%">
 
-/careers
-Supported career paths
+## 💳 Subscriptions
 
-/pricing
-Pricing page
+Razorpay-powered subscription infrastructure with server-side verification and feature gating.
 
-/about
-About
+</td>
+<td width="50%">
 
-/contact
-Contact
+## 📱 Responsive UI
 
-/privacy
-Privacy policy
-
-/terms
-Terms of service
-
-LANDING PAGE
-
-Hero section:
-
-"Stop guessing what to learn.
-Learn what real jobs require."
-
-Subheading:
-
-"CareerPath AI compares your skills with real job requirements and builds a personalized roadmap to help you become job-ready."
-
-Primary CTA:
-"Build My Career Roadmap"
-
-Secondary CTA:
-"See How It Works"
-
-Add a visual dashboard preview showing:
-
-Job:
-Data Analyst
-
-Readiness:
-42%
-
-Skills:
-Excel ✓
-SQL 20%
-Statistics 10%
-Power BI 0%
-Python 60%
-
-Then show:
-
-"Based on 247 relevant job postings"
-
-Add sections:
-
-How it works
-
-Skill-gap analysis
-
-Personalized roadmap
-
-Real job intelligence
-
-Project recommendations
-
-Progress tracking
-
-Internship readiness
-
-Testimonials
-
-FAQ
-
-Final CTA
-
-AUTHENTICATION
-
-Use Supabase Auth.
-
-Support:
-
-Email/password signup
-
-Email/password login
-
-Google OAuth
-
-Password reset
-
-Logout
-
-Protected dashboard routes
-
-After signup, send the user to onboarding.
-
-ONBOARDING
-
-Create a multi-step onboarding wizard.
-
-Step 1:
-What job do you want?
-
-Examples:
-
-Data Analyst
-
-Software Engineer
-
-Frontend Developer
-
-Backend Developer
-
-Data Scientist
-
-Cybersecurity Analyst
-
-Product Manager
-
-UI/UX Designer
-
-Allow custom roles.
-
-Step 2:
-Education
-
-Options:
-
-High school
-
-Diploma
-
-Bachelor's
-
-Master's
-
-PhD
-
-Other
-
-Fields:
-
-Degree
-
-Field of study
-
-Graduation year
-
-Step 3:
-Current skills
-
-Allow users to select skills and assign confidence levels:
-
-Beginner
-Intermediate
-Advanced
-
-Allow custom skills.
-
-Step 4:
-Experience
-
-No experience
-
-<1 year
-
-1–2 years
-
-2–5 years
-
-5+ years
-
-Step 5:
-Hours available per week
-
-Slider:
-1–40 hours
-
-Step 6:
-Target salary
-
-Allow:
-
-Currency
-
-Minimum salary
-
-Desired salary
-
-Step 7:
-Location
-
-Allow:
-
-Country
-
-City
-
-Remote preference
-
-Hybrid
-
-On-site
-
-Step 8:
-Generate roadmap.
-
-Show a beautiful loading experience explaining:
-
-"Analyzing job requirements..."
-"Identifying required skills..."
-"Comparing your current skills..."
-"Building your roadmap..."
-
-Then redirect to dashboard.
-
-MAIN DASHBOARD
-
-Create a premium career dashboard.
-
-Header:
-
-"Good morning, {name}"
-
-"Your path to becoming a Data Analyst"
-
-Main readiness card:
-
-JOB READINESS
-
-42%
-
-"You're approximately 42% of the way toward the current skill profile for your target role."
-
-Use an animated circular progress indicator.
-
-Also display:
-
-Required skills: 12
-Skills mastered: 5
-Skills in progress: 3
-Skills missing: 4
-
-SKILL GAP ANALYSIS
-
-Create a skill matrix.
-
-Columns:
-
-Skill | Importance | Your Level | Required Level | Gap | Status
-
-Example:
-
-Excel
-High
-Advanced
-Advanced
-0%
-Ready
-
-SQL
-Critical
-Beginner
-Advanced
-65%
-Needs Work
-
-Statistics
-High
-Beginner
-Intermediate
-55%
-Needs Work
-
-Power BI
-High
-None
-Intermediate
-100%
-Missing
-
-Python
-Medium
-Intermediate
-Intermediate
-0%
-Ready
-
-Visualize this with:
-
-Progress bars
-
-Donut charts
-
-Radar chart
-
-Skill cards
-
-Use color/status indicators consistently.
-
-REAL JOB INTELLIGENCE
-
-This is the core differentiator.
-
-Create a "Job Market Intelligence" section.
-
-Show:
-
-"Based on current job requirements"
-
-Metrics:
-
-Jobs analyzed
-Average experience required
-Most requested skills
-Salary range
-Remote availability
-Top locations
-
-Example:
-
-247 jobs analyzed
-
-Most requested skills:
-SQL — 84%
-Excel — 76%
-Power BI — 61%
-Python — 48%
-Tableau — 35%
-
-The system should NOT claim these numbers are real unless actual job data has been retrieved.
-
-If job APIs are not connected yet, use clearly labeled demo/mock data.
-
-Never fabricate real job-posting statistics.
-
-JOB REQUIREMENT ENGINE
-
-Create a backend architecture that can ingest job postings.
-
-Each job should contain:
-
-job title
-
-company
-
-location
-
-remote status
-
-salary if available
-
-description
-
-required skills
-
-preferred skills
-
-experience requirement
-
-education requirement
-
-source
-
-source URL
-
-posting date
-
-retrieved date
-
-Normalize skills into a canonical skills database.
-
-For example:
-
-"Structured Query Language"
-"SQL"
-"SQL Server"
-
-can map to a normalized skill such as:
-
-SQL
-
-Similarly:
-
-"Microsoft Power BI"
-"Power BI"
-
-→ Power BI
-
-Do not scrape websites in a way that violates their terms.
-
-Create an adapter-based architecture so legitimate APIs/job feeds can be connected later.
-
-CAREER ROADMAP ENGINE
-
-Create an AI-powered roadmap generator.
-
-Inputs:
-
-target role
-
-current skills
-
-skill proficiency
-
-hours/week
-
-target salary
-
-location
-
-job market requirements
-
-preferred learning style
-
-Output:
-
-6-month roadmap.
-
-Each month contains:
-
-goals
-
-skills
-
-estimated hours
-
-learning resources
-
-exercises
-
-project
-
-milestone
-
-assessment
-
-Example:
-
-MONTH 1
-Advanced Excel
-
-Estimated time:
-25 hours
-
-Topics:
-
-Pivot tables
-
-XLOOKUP
-
-Power Query
-
-Data cleaning
-
-Conditional formatting
-
-Dashboard creation
-
-Project:
-"Sales Performance Dashboard"
-
-Milestone:
-"Build a dashboard from a raw CSV dataset."
-
-WEEKLY PLAN
-
-Break every month into weekly tasks.
-
-Example:
-
-Week 1
-Excel formulas
-5 hours
-
-Week 2
-Pivot tables
-5 hours
-
-Week 3
-Power Query
-6 hours
-
-Week 4
-Excel dashboard
-8 hours
-
-Allow users to mark tasks complete.
-
-Persist progress in Supabase.
-
-PROJECT GENERATOR
-
-Recommend portfolio projects based on skill gaps.
-
-Each project should contain:
-
-title
-
-difficulty
-
-estimated hours
-
-skills demonstrated
-
-dataset suggestion
-
-project requirements
-
-expected output
-
-GitHub README outline
-
-resume bullet suggestion
-
-Example:
-
-"Customer Churn Analysis Dashboard"
-
-Skills:
-SQL
-Excel
-Power BI
-Statistics
-
-Difficulty:
-Intermediate
-
-Estimated time:
-15 hours
-
-RESOURCE RECOMMENDATIONS
-
-Each roadmap topic should have resources.
-
-Categories:
-
-Documentation
-
-Courses
-
-Videos
-
-Books
-
-Practice platforms
-
-Projects
-
-Resources must be stored separately so they can be updated.
-
-Do not invent URLs.
-
-Allow admins to manage resources.
-
-JOB RECOMMENDATIONS
-
-Create a "Jobs You Can Target" page.
-
-For each job show:
-
-Company
-Role
-Location
-Salary if available
-Match percentage
-Required skills
-Missing skills
-Experience requirement
-
-Example:
-
-Data Analyst
-Company Name
-
-82% Match
-
-✓ Excel
-✓ SQL
-✓ Power BI
-⚠ Statistics
-
-Button:
-"View Job"
-
-Clicking should open the original job source.
-
-Never fabricate companies, jobs, salary data, or job URLs.
-
-JOB MATCH SCORE
-
-Build a transparent matching algorithm.
-
-Example weighted factors:
-
-Skills: 55%
-Experience: 15%
-Education: 10%
-Location: 10%
-Salary alignment: 10%
-
-Make weights configurable.
-
-Show users WHY they received their score.
-
-Example:
-
-Skill match: 72%
-Experience match: 90%
-Education match: 100%
-Location match: 80%
-Salary match: 70%
-
-Overall:
-79%
-
-CONTINUOUS PROGRESS
-
-The dashboard should update as users complete learning tasks.
-
-Example:
-
-Yesterday:
-40%
-
-Today:
-43%
-
-After completing SQL:
-48%
-
-Show a progress timeline.
-
-Track:
-
-completed skills
-
-completed roadmap tasks
-
-projects
-
-assessments
-
-job applications
-
-JOB READINESS CHECK
-
-Create a "Check My Readiness" feature.
-
-Ask:
-
-"What have you completed?"
-
-Then compare completed skills with current job requirements.
-
-Output:
-
-READY FOR:
-Junior Data Analyst
-
-ALMOST READY:
-Business Intelligence Analyst
-
-NOT YET:
-Senior Data Analyst
-
-Explain the reasoning.
-
-ASSESSMENTS
-
-Create lightweight skill assessments.
-
-Examples:
-
-SQL assessment
-Excel assessment
-Statistics assessment
-Power BI assessment
-
-Store:
-
-questions
-
-answers
-
-score
-
-skill
-
-difficulty
-
-After assessment update skill confidence.
-
-For example:
-
-SQL confidence:
-Beginner → Intermediate
-
-Then recalculate readiness.
-
-APPLICATION TRACKER
-
-Create a job application tracker.
-
-Statuses:
-
-Saved
-Applied
-Interview
-Offer
-Rejected
-
-Allow:
-
-company
-
-role
-
-URL
-
-salary
-
-date applied
-
-notes
-
-status
-
-Dashboard metrics:
-
-Applications
-Interviews
-Offers
-Response rate
-
-PROFILE
-
-Create profile page with:
-
-education
-
-skills
-
-target role
-
-target salary
-
-location
-
-availability
-
-experience
-
-Allow editing.
-
-ADMIN DASHBOARD
-
-Create protected admin routes.
-
-Admin can manage:
-
-users
-
-careers
-
-skills
-
-job sources
-
-jobs
-
-learning resources
-
-projects
-
-assessments
-
-roadmap templates
-
-Admin dashboard should show:
-
-Total users
-Active users
-Popular careers
-Average readiness
-Most missing skills
-Jobs analyzed
-
-DATABASE
-
-Use Supabase PostgreSQL.
-
-Create proper normalized tables.
-
-Suggested schema:
-
-profiles
-skills
-user_skills
-careers
-career_skills
-jobs
-job_skills
-job_sources
-roadmaps
-roadmap_months
-roadmap_tasks
-projects
-resources
-assessments
-assessment_questions
-assessment_attempts
-applications
-progress_events
-
-Use UUID primary keys.
-
-Add:
-
-created_at
-
-updated_at
-
-where appropriate.
-
-Use foreign keys and indexes.
-
-SECURITY
-
-Implement:
-
-Supabase Row Level Security
-
-users can only access their own private profile/progress/application data
-
-admins have separate permissions
-
-never expose service-role keys to frontend
-
-secrets must be environment variables
-
-validate all API inputs
-
-protect admin routes
-
-sanitize user-generated content
-
-rate-limit AI/API endpoints where appropriate
-
-AI ARCHITECTURE
-
-Do not expose the AI API key in frontend code.
-
-Create secure server-side functions.
-
-AI should be responsible for:
-
-Skill-gap interpretation
-
-Roadmap generation
-
-Project recommendations
-
-Learning-plan personalization
-
-Job explanation
-
-AI should NOT invent job-market statistics.
-
-AI should only use supplied job data when making job-market claims.
-
-Create structured JSON outputs from AI so results are predictable.
-
-Validate AI responses before storing them.
-
-AI ROADMAP OUTPUT STRUCTURE
-
-The AI should return structured data containing:
-
-career
-summary
-readiness_score
-skills
-skill_gaps
-months
-weekly_tasks
-projects
-resources
-milestones
-
-Use schema validation.
-
-If AI generation fails, show a useful error and allow retry.
-
-SEARCH
-
-Global search should allow users to search:
-
-careers
-
-skills
-
-jobs
-
-projects
-
-resources
-
-Add filtering.
-
-NOTIFICATIONS
-
-Create notification infrastructure for:
-
-roadmap milestones
-
-weekly goals
-
-assessment results
-
-saved-job reminders
-
-application follow-ups
-
-Initially implement in-app notifications.
-
-Structure the system so email notifications can be added later.
-
-ANALYTICS
-
-Track product events such as:
-
-signup
-onboarding_completed
-roadmap_generated
-task_completed
-assessment_completed
-project_started
-job_saved
-application_created
-
-Do not collect unnecessary sensitive personal information.
-
-Create an admin analytics dashboard.
-
-EMPTY STATES
-
-Every page must have useful empty states.
-
-Examples:
-
-"No roadmap yet"
-"Complete onboarding to generate your roadmap."
-
-"No saved jobs"
-"Save a job to compare it against your skills."
-
-"No projects completed"
-"Start your first portfolio project."
-
-ERROR HANDLING
-
-Never show raw technical errors to users.
-
-Create friendly error states.
-
-Include retry actions.
-
-Handle:
-
-API failures
-
-AI failures
-
-authentication errors
-
-database errors
-
-missing job data
-
-invalid forms
-
-network errors
-
-PERFORMANCE
-
-Optimize for production:
-
-lazy-load heavy components
-
-paginate job listings
-
-debounce search
-
-cache suitable data
-
-avoid unnecessary database requests
-
-use indexed database queries
-
-optimize images
-
-avoid huge client bundles
-
-SEO
-
-Implement:
-
-metadata
-
-Open Graph tags
-
-sitemap
-
-robots.txt
-
-semantic HTML
-
-proper page titles
-
-career-specific landing pages
-
-Example SEO pages:
-
-/careers/data-analyst
-/careers/software-engineer
-/careers/frontend-developer
-
-PWA / MOBILE
-
-Make the application mobile-first and installable as a PWA if practical.
-
-Dashboard must work particularly well on mobile.
-
-DEMO MODE
-
-Create a demo account/data mode so the application looks impressive even before real job APIs are connected.
-
-Clearly label demo data as:
-
-"Demo data — connect job sources to enable live market intelligence."
-
-Do not present demo data as real-world current statistics.
-
-PRICING ARCHITECTURE
-
-Prepare the application for:
-
-Free
-Pro
-Premium
-
-Free:
-
-one career roadmap
-
-basic skill analysis
-
-limited job matches
-
-Pro:
-
-unlimited roadmaps
-
-advanced job matching
-
-assessments
-
-application tracker
-
-detailed analytics
-
-Premium:
-
-advanced AI career coaching
-
-personalized interview preparation
-
-advanced market intelligence
-
-Do not activate payments until the core product works.
-
-Prepare the database and UI architecture for Stripe later.
-
-CODE QUALITY
-
-Use:
-
-TypeScript
-
-reusable components
-
-clean folder structure
-
-typed API responses
-
-reusable hooks
-
-service layer for API/database logic
-
-environment variables
-
-clear naming
-comments only where useful
-Do not create one giant component.
-
-Do not duplicate logic.
-
-Do not hardcode user-specific data.
-
-IMPORTANT PRODUCT PRINCIPLES
-
-Real job requirements are the source of truth for market intelligence.
-
-Never fabricate job statistics.
-
-Never fabricate companies or job postings.
-
-Separate demo data from production data.
-
-Make every recommendation explainable.
-
-Make the readiness score transparent.
-
-The roadmap should adapt when the user's skills change.
-
-The application must be useful even when live job APIs are unavailable.
-
-Build the architecture so additional job sources can be plugged in later.
-
-Treat user data as private.
-
-FINAL DELIVERABLE
-
-Generate the complete working application.
-
-Do not build a static mockup.
-
-Build:
-
-frontend
-
-authentication
-
-database schema
-
-backend functions
-
-AI integration architecture
-
-dashboards
-
-onboarding
-
-roadmap
-
-skill tracking
-
-job matching
-
-projects
-
-resources
-
-assessments
-
-application tracker
-
-admin dashboard
-
-responsive UI
-
-error handling
-
-security policies
-
-SEO
-
-demo data
-
-Before considering the application complete, test every major user flow.
-
-The final application should feel like a real startup product that could be shown to investors, recruiters, students, or early users.
-
-## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
-```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+A responsive interface designed for desktop and mobile experiences.
+
+</td>
+</tr>
+</table>
+
+---
+
+# 🔄 How Rolisha Works
+
+```text
+┌──────────────────────┐
+│    Create Account    │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Define Career Goal   │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Add Current Skills   │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Generate Roadmap     │
+└──────────┬───────────┘
+           │
+           ▼
+┌──────────────────────┐
+│ Identify Skill Gaps  │
+└──────────┬───────────┘
+           │
+           ▼
+     ┌─────┴─────┐
+     │           │
+     ▼           ▼
+  Learning    Projects
+     │           │
+     └─────┬─────┘
+           │
+           ▼
+      Assessments
+           │
+           ▼
+    Track Progress
+           │
+           ▼
+    Explore Jobs
+```
+
+---
+
+# 🏗️ Architecture
+
+Rolisha follows a full-stack TypeScript architecture built around TanStack Start, Supabase, and external service integrations.
+
+```text
+                              ┌─────────────────┐
+                              │      User       │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+                         ┌──────────────────────────┐
+                         │        React UI          │
+                         │   Tailwind + shadcn/ui   │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                         ┌──────────────────────────┐
+                         │     TanStack Router      │
+                         │      TanStack Query      │
+                         └────────────┬─────────────┘
+                                      │
+                                      ▼
+                         ┌──────────────────────────┐
+                         │     TanStack Start       │
+                         │     Server Functions     │
+                         │          SSR             │
+                         └────────────┬─────────────┘
+                                      │
+             ┌────────────────────────┼─────────────────────────┐
+             │                        │                         │
+             ▼                        ▼                         ▼
+     ┌───────────────┐       ┌────────────────┐       ┌────────────────┐
+     │   Supabase    │       │     Adzuna     │       │    Razorpay    │
+     │               │       │                │       │                │
+     │ PostgreSQL    │       │ Job Data       │       │ Subscriptions  │
+     │ Auth          │       │ Ingestion       │       │ Payments       │
+     │ RLS           │       │ Normalization   │       │ Verification   │
+     └───────┬───────┘       └────────────────┘       └────────────────┘
+             │
+             ▼
+     ┌────────────────────┐
+     │   Career Data      │
+     │                    │
+     │ Roadmaps           │
+     │ Skills             │
+     │ Learning           │
+     │ Projects           │
+     │ Assessments        │
+     │ Progress           │
+     └────────────────────┘
+```
+
+---
+
+# 💼 Job Data Pipeline
+
+Rolisha processes job-market data through an ingestion and normalization pipeline.
+
+```text
+                    ┌──────────────┐
+                    │    Adzuna    │
+                    └──────┬───────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │ API Job Data    │
+                  └────────┬────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │   Normalize     │
+                  │   Job Data      │
+                  └────────┬────────┘
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │ Structured Job  │
+                  │     Record      │
+                  └────────┬────────┘
+                           │
+                    ┌──────┴──────┐
+                    ▼             ▼
+             Job Listings    Job Details
+                    │             │
+                    └──────┬──────┘
+                           ▼
+                    Rolisha UI
+```
+
+Normalized job information can include:
+
+* Job title
+* Company
+* Location
+* Description
+* Experience
+* Work mode
+* Salary information where available
+* Application URL
+
+---
+
+# 🛠️ Tech Stack
+
+### Frontend
+
+| Technology   | Purpose                |
+| ------------ | ---------------------- |
+| React        | User interface         |
+| TypeScript   | Type-safe development  |
+| Tailwind CSS | Styling                |
+| shadcn/ui    | Reusable UI components |
+
+### Full-Stack Framework
+
+| Technology      | Purpose                          |
+| --------------- | -------------------------------- |
+| TanStack Start  | Full-stack React framework / SSR |
+| TanStack Router | File-based routing               |
+| TanStack Query  | Server-state management          |
+| Vite            | Development and build tooling    |
+
+### Backend & Database
+
+| Technology         | Purpose                       |
+| ------------------ | ----------------------------- |
+| Supabase           | Backend platform              |
+| PostgreSQL         | Relational database           |
+| Supabase Auth      | Authentication                |
+| Row Level Security | Database access control       |
+| Server Functions   | Server-side application logic |
+| Zod                | Runtime validation            |
+
+### External Integrations
+
+| Service      | Purpose               |
+| ------------ | --------------------- |
+| Adzuna       | Job-market data       |
+| Razorpay     | Subscription payments |
+| Google OAuth | Authentication        |
+
+### Testing & Deployment
+
+| Technology | Purpose               |
+| ---------- | --------------------- |
+| Vitest     | Automated testing     |
+| ESLint     | Code quality          |
+| TypeScript | Static type checking  |
+| Cloudflare | Production hosting    |
+| Wrangler   | Cloudflare deployment |
+
+---
+
+# 📂 Project Structure
+
+```text
+Rolisha/
+│
+├── src/
+│   ├── components/
+│   │   └── ...                    # Reusable UI components
+│   │
+│   ├── lib/
+│   │   ├── auth/
+│   │   │   └── ...                # Authentication
+│   │   │
+│   │   ├── jobs/
+│   │   │   ├── description.ts     # Job description processing
+│   │   │   ├── normalize.ts       # Job normalization
+│   │   │   └── ...                # Job ingestion
+│   │   │
+│   │   ├── payments/
+│   │   │   └── ...                # Razorpay integration
+│   │   │
+│   │   └── ...                    # Core application logic
+│   │
+│   └── routes/
+│       ├── _authenticated/
+│       │   └── ...                 # Protected routes
+│       └── ...
+│
+├── supabase/
+│   └── migrations/                 # Database migrations
+│
+├── public/                         # Static assets
+├── docs/                           # Documentation & screenshots
+│
+├── .env.example                    # Environment template
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+└── wrangler.jsonc
+```
+
+---
+
+# 🚀 Getting Started
+
+## Prerequisites
+
+You need:
+
+* Node.js
+* npm
+* Git
+* A Supabase project
+* Required third-party API credentials
+
+---
+
+## 1. Clone the repository
+
+```bash
+git clone https://github.com/Shashankishere/Rolisha.git
+cd Rolisha
+```
+
+---
+
+## 2. Install dependencies
+
+```bash
+npm install
+```
+
+---
+
+## 3. Configure environment variables
+
+Create your local environment file using the repository template:
+
+```bash
+cp .env.example .env
+```
+
+Configure the required Supabase, authentication, Adzuna, Razorpay, and application variables.
+
+> Never commit `.env` or production credentials.
+
+---
+
+## 4. Start the development server
+
+```bash
 npm run dev
 ```
+
+Open the local URL displayed by the development server.
+
+---
+
+# 🧪 Testing
+
+Rolisha uses automated testing and static validation to protect application behavior.
+
+### Full test suite
+
+```bash
+npm test
+```
+
+### TypeScript validation
+
+```bash
+npx tsc --noEmit
+```
+
+### Production build
+
+```bash
+npm run build
+```
+
+### Git diff validation
+
+```bash
+git diff --check
+```
+
+### Recommended pre-deployment checks
+
+```bash
+npm test
+npx tsc --noEmit
+npm run build
+git diff --check
+```
+
+---
+
+# 🔐 Security
+
+Rolisha uses multiple layers of security:
+
+* Supabase Authentication
+* PostgreSQL Row Level Security
+* Protected authenticated routes
+* Server-side authorization
+* Zod input validation
+* Server-side payment verification
+* Secure environment variables
+* Subscription/webhook synchronization
+
+Production secrets should never be stored in the Git repository.
+
+---
+
+# 💳 Payment System
+
+Rolisha uses Razorpay for subscription payments.
+
+Payment-sensitive operations are handled server-side and subscription/payment information is verified before updating application state.
+
+The current customer-facing pricing flow is configured for:
+
+```text
+Region   → India
+Currency → INR (₹)
+```
+
+Payment credentials and account configuration are managed outside the public repository.
+
+---
+
+# ☁️ Deployment
+
+Rolisha is deployed using **Cloudflare** with **Wrangler**.
+
+## Cloudflare authentication
+
+```bash
+npx wrangler login
+```
+
+## Production build
+
+```bash
+npm run build
+```
+
+## Deploy
+
+```bash
+npx wrangler deploy
+```
+
+### Production URL
+
+**https://rolisha.in/**
+
+---
+
+# 🔄 Production Release Workflow
+
+A typical production release follows:
+
+```text
+Code Change
+    ↓
+Run Tests
+    ↓
+TypeScript Check
+    ↓
+Production Build
+    ↓
+Review Git Diff
+    ↓
+Commit
+    ↓
+Push to GitHub
+    ↓
+Deploy with Wrangler
+    ↓
+Verify Production
+```
+
+Recommended commands:
+
+```bash
+git status
+git fetch origin
+git pull --rebase origin main
+
+npm test
+npx tsc --noEmit
+npm run build
+git diff --check
+
+git add .
+git commit -m "describe your change"
+git push origin main
+
+npx wrangler deploy
+```
+
+> Review `git status` and `git diff` before using `git add .` if unrelated changes are present.
+
+---
+
+# 🗄️ Database Migrations
+
+Database changes are managed through Supabase migrations.
+
+Migration files are located at:
+
+```text
+supabase/migrations/
+```
+
+When deploying database-related changes, ensure the required migrations have been applied to the target Supabase environment before depending on the new schema or data.
+
+---
+
+# 🌱 Product Vision
+
+Career planning often separates several different activities:
+
+```text
+Career Advice
+      +
+Learning Resources
+      +
+Projects
+      +
+Assessments
+      +
+Job Searching
+```
+
+Rolisha connects these into a single workflow:
+
+```text
+Career Goal
+     ↓
+Required Skills
+     ↓
+Skill Gap
+     ↓
+Learning
+     ↓
+Projects
+     ↓
+Assessments
+     ↓
+Progress
+     ↓
+Real Job Market
+```
+
+The goal is to give learners a clearer and more actionable path from **career intention to career preparation**.
+
+---
+
+# 🗺️ Future Development
+
+Areas for continued development include:
+
+* Expanding supported career paths
+* Improving job-market insights
+* Expanding learning content
+* Improving skill recommendations
+* Enhancing progress analytics
+* Expanding career preparation workflows
+
+---
+
+# 🤝 Contributing
+
+Contributions, suggestions, and bug reports are welcome.
+
+### Development workflow
+
+1. Fork the repository.
+2. Create a feature branch.
+
+```bash
+git checkout -b feature/your-feature
+```
+
+3. Make your changes.
+4. Add or update tests.
+5. Run the validation suite.
+
+```bash
+npm test
+npx tsc --noEmit
+npm run build
+```
+
+6. Commit your changes.
+
+```bash
+git commit -m "feat: describe your change"
+```
+
+7. Push your branch and open a pull request.
+
+---
+
+# 👨‍💻 Author
+
+## Shashank Kumar Mishra
+
+**Computer Science Student • Full Stack Developer • AI & Software Enthusiast**
+
+Building ideas into real products.
+
+<p align="center">
+  <a href="https://github.com/Shashankishere">
+    <img src="https://img.shields.io/badge/GitHub-Shashankishere-181717?style=for-the-badge&logo=github" alt="GitHub">
+  </a>
+  <a href="https://rolisha.in/">
+    <img src="https://img.shields.io/badge/Website-Rolisha-2563EB?style=for-the-badge" alt="Rolisha Website">
+  </a>
+</p>
+
+---
+
+# 📄 License
+
+Please refer to the repository's license file for the applicable usage and distribution terms.
+
+---
+
+<p align="center">
+  <strong>Rolisha</strong><br>
+  <em>Role + Disha — Direction toward your desired career role.</em>
+  <br><br>
+  <a href="https://rolisha.in/">🚀 Visit Rolisha</a>
+  &nbsp; • &nbsp;
+  <a href="https://github.com/Shashankishere/Rolisha">💻 View Source</a>
+</p>
