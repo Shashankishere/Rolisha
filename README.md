@@ -760,7 +760,9 @@ Building ideas into real products.
 
 # 📄 License
 
-Please refer to the repository's license file for the applicable usage and distribution terms.
+Rolisha is licensed under the MIT License.
+
+See the [LICENSE](LICENSE) file for the full license text.
 
 ---
 
