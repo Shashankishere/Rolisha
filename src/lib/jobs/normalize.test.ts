@@ -46,3 +46,42 @@ describe("normalizeJob — salary currency", () => {
     expect(normalizeJob(rawJob({ country: null, salaryCurrency: null })).salaryCurrency).toBeNull();
   });
 });
+
+describe("normalizeJob — description cleanup", () => {
+  const messy =
+    "Frontend Developer Location: Onsite – Bangalore Experience: 6 years Role Overview We are seeking a seasoned Frontend Developer. Responsibilities: build UIs";
+
+  it("splits pasted fields and sections onto their own lines", () => {
+    const job = normalizeJob(rawJob({ title: "Frontend Developer", description: messy }));
+    expect(job.description).toBe(
+      "Location: Onsite – Bangalore\n\nRole Overview:\nWe are seeking a seasoned Frontend Developer.\n\nResponsibilities:\nbuild UIs",
+    );
+  });
+
+  it("fills experience and work mode from the text when the provider gives none", () => {
+    const job = normalizeJob(
+      rawJob({ title: "Frontend Developer", location: "India", description: messy }),
+    );
+    expect(job.experienceYearsMin).toBe(6);
+    expect(job.workMode).toBe("onsite");
+  });
+
+  it("never overrides provider-supplied values", () => {
+    const job = normalizeJob(
+      rawJob({ location: "Remote", experienceYearsMin: 2, description: messy }),
+    );
+    expect(job.experienceYearsMin).toBe(2);
+    expect(job.workMode).toBe("remote");
+  });
+
+  it("leaves descriptions without labels alone and is idempotent", () => {
+    const plain = normalizeJob(rawJob({ description: "Do data things." }));
+    expect(plain.description).toBe("Do data things.");
+    expect(plain.experienceYearsMin).toBeNull();
+    const once = normalizeJob(rawJob({ title: "Frontend Developer", description: messy }));
+    const twice = normalizeJob(
+      rawJob({ title: "Frontend Developer", description: once.description }),
+    );
+    expect(twice.description).toBe(once.description);
+  });
+});

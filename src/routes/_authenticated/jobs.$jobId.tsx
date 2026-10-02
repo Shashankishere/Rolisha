@@ -10,6 +10,7 @@ import { JobMatchBreakdown } from "@/components/jobs/job-match-breakdown";
 import { getJobDetail, addMissingSkillsToRoadmap, saveJob, unsaveJob } from "@/lib/jobs.functions";
 import { WORK_MODE_LABEL } from "@/lib/domain";
 import { formatJobSalary } from "@/lib/jobs/salary-display";
+import { isDescriptionHeading, parseJobDescription } from "@/lib/jobs/description";
 import { LockedBadge } from "@/components/app/upgrade-prompt";
 
 function jobDetailQuery(jobId: string) {
@@ -100,6 +101,9 @@ function JobDetailPage() {
   if (!job) return null;
 
   const salary = formatJobSalary(job);
+  // Idempotent, so it also tidies rows ingested before the parser existed.
+  const parsedDescription = parseJobDescription(job.description, job.title);
+  const experienceYears = job.experienceYearsMin ?? parsedDescription.experienceYearsMin;
 
   const isAlmostQualified =
     job.match.overall >= 65 && job.match.overall < 95 && job.missingSkills.length > 0;
@@ -129,6 +133,16 @@ function JobDetailPage() {
                 <dt className="text-muted-foreground text-xs uppercase tracking-wide">Location</dt>
                 <dd className="font-medium">{job.location ?? "Location not specified"}</dd>
               </div>
+              {experienceYears !== null && (
+                <div>
+                  <dt className="text-muted-foreground text-xs uppercase tracking-wide">
+                    Experience
+                  </dt>
+                  <dd className="font-medium">
+                    {experienceYears === 0 ? "Fresher" : `${experienceYears}+ years`}
+                  </dd>
+                </div>
+              )}
               <div>
                 <dt className="text-muted-foreground text-xs uppercase tracking-wide">Posted</dt>
                 <dd className="font-medium">
@@ -142,12 +156,23 @@ function JobDetailPage() {
             </dl>
           </section>
 
-          {job.description && (
+          {parsedDescription.text && (
             <section className="panel p-6">
               <h2 className="font-display text-lg font-semibold">Description</h2>
-              <p className="text-muted-foreground mt-3 whitespace-pre-line text-sm">
-                {job.description}
-              </p>
+              <div className="mt-3 space-y-4 text-sm">
+                {parsedDescription.text.split(/\n{2,}/).map((block, i) => {
+                  const [first = "", ...rest] = block.split("\n");
+                  const hasHeading = isDescriptionHeading(first);
+                  return (
+                    <div key={i}>
+                      {hasHeading && <h3 className="text-foreground mb-1 font-medium">{first}</h3>}
+                      <p className="text-muted-foreground whitespace-pre-line">
+                        {(hasHeading ? rest : [first, ...rest]).join("\n")}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
           )}
 

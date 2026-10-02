@@ -7,6 +7,7 @@
  */
 import type { EducationLevel, WorkMode } from "@/lib/domain";
 import { currencyForCountry } from "@/lib/jobs/country-currency";
+import { parseJobDescription } from "@/lib/jobs/description";
 import type { NormalizedJob, RawProviderJob } from "@/lib/jobs/types";
 
 function cleanString(value: string | null | undefined): string | null {
@@ -98,18 +99,23 @@ export function normalizeJob(raw: RawProviderJob): NormalizedJob {
   // job's own country. This never overrides a currency the provider did
   // supply, and never converts amounts — just labels them correctly.
   const salaryCurrency = normalizeCurrency(raw.salaryCurrency) ?? currencyForCountry(country);
+  // Keep the description's line structure (cleanString would flatten it) and
+  // pick up "Experience: 6 years" / "Location: Onsite – Bangalore" lines that
+  // employers paste into the text, since Adzuna doesn't supply them directly.
+  const parsedDescription = parseJobDescription(raw.description, raw.title);
   return {
     externalId: cleanString(raw.externalId),
     title: cleanRequired(raw.title, "Untitled role"),
     company: cleanRequired(raw.company, "Unknown company"),
     location,
     country,
-    workMode: normalizeWorkMode(location, raw.employmentType),
+    workMode: normalizeWorkMode(location, raw.employmentType) ?? parsedDescription.workMode,
     salaryMin: normalizeSalaryValue(raw.salaryMin),
     salaryMax: normalizeSalaryValue(raw.salaryMax),
     salaryCurrency,
-    description: cleanString(raw.description),
-    experienceYearsMin: normalizeExperienceYears(raw.experienceYearsMin),
+    description: parsedDescription.text || null,
+    experienceYearsMin:
+      normalizeExperienceYears(raw.experienceYearsMin) ?? parsedDescription.experienceYearsMin,
     educationRequirement: normalizeEducation(raw.educationRequirement),
     sourceUrl: cleanString(raw.url),
     postedAt: normalizePostedAt(raw.postedAt),
