@@ -34,7 +34,7 @@ The production application is publicly accessible while the complete source code
 
 **Source Code:** [github.com/Shashankishere/Rolisha](https://github.com/Shashankishere/Rolisha)
 
-Keeping the project open-source allows developers and recruiters to explore the implementation while users can experience the deployed application directly.
+The project is open-source, allowing developers and recruiters to explore the codebase while users can try out the deployed application.
 
 > 🔒 Production credentials, API keys, and secrets are kept outside the repository and are configured through secure environment/deployment settings.
 
@@ -82,45 +82,6 @@ How am I progressing?
 What jobs match my preparation?
 ```
 
----
-
-# 📸 Screenshots & Demo
-
-> Add your production screenshots to `docs/screenshots/` using the filenames below.
-
-### Landing Page
-
-<p align="center">
-  <img src="./docs/screenshots/landing.png" alt="Rolisha Landing Page" width="900">
-</p>
-
-### Career Roadmap
-
-<p align="center">
-  <img src="./docs/screenshots/roadmap.png" alt="Rolisha Career Roadmap" width="900">
-</p>
-
-### Dashboard
-
-<p align="center">
-  <img src="./docs/screenshots/dashboard.png" alt="Rolisha Dashboard" width="900">
-</p>
-
-### Job Explorer
-
-<p align="center">
-  <img src="./docs/screenshots/jobs.png" alt="Rolisha Job Explorer" width="900">
-</p>
-
-### 🚀 Try the Live Application
-
-<p align="center">
-  <a href="https://rolisha.in/">
-    <img src="https://img.shields.io/badge/🚀%20Try%20Rolisha-Live%20Application-2563EB?style=for-the-badge" alt="Try Rolisha">
-  </a>
-</p>
-
----
 
 # 🎯 What is Rolisha?
 
