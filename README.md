@@ -1,813 +1,507 @@
-# Rolisha
+Rolisha
+Your career path, mapped to what real jobs require.
+<p align="center"> <strong>An AI-powered career roadmap platform that connects career goals, skills, learning, projects, assessments, and real job-market data.</strong> </p> <p align="center"> <strong>Role + Disha → Rolisha</strong> <br> <em>"Disha" (दिशा) means direction or path.</em> </p> <p align="center"> <a href="https://rolisha.in/"> <img src="https://img.shields.io/badge/🚀%20Live%20Demo-rolisha.in-2563EB?style=for-the-badge" alt="Live Demo"> </a> <a href="https://github.com/Shashankishere/Rolisha"> <img src="https://img.shields.io/badge/💻%20Source%20Code-GitHub-181717?style=for-the-badge&logo=github" alt="Source Code"> </a> </p> <p align="center"> <img src="https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"> <img src="https://img.shields.io/badge/React-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"> <img src="https://img.shields.io/badge/TanStack%20Start-FF4154?style=for-the-badge" alt="TanStack Start"> <img src="https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase"> <img src="https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare"> </p>
+🚀 Live Demo
 
-### Your career path, mapped to what real jobs require.
+Try Rolisha: https://rolisha.in/
 
-<p align="center">
-  <strong>A career roadmap platform that connects career goals, skills, learning, projects, assessments, and real job-market data.</strong>
-</p>
+Rolisha is a production-deployed career planning SaaS. The source code is publicly available for developers and recruiters to explore.
 
-<p align="center">
-  <a href="https://rolisha.in/">
-    <img src="https://img.shields.io/badge/🚀%20Live%20Demo-rolisha.in-2563EB?style=for-the-badge" alt="Live Demo">
-  </a>
-  <a href="https://github.com/Shashankishere/Rolisha">
-    <img src="https://img.shields.io/badge/💻%20Source%20Code-GitHub-181717?style=for-the-badge&logo=github" alt="Source Code">
-  </a>
-</p>
+Production credentials, API keys, and secrets are managed through environment and deployment configuration and are not committed to the repository.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/TypeScript-React-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
-  <img src="https://img.shields.io/badge/TanStack-Start-FF4154?style=for-the-badge" alt="TanStack Start">
-  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase">
-  <img src="https://img.shields.io/badge/Cloudflare-Wrangler-F38020?style=for-the-badge&logo=cloudflare&logoColor=white" alt="Cloudflare">
-</p>
+🎯 What is Rolisha?
 
----
+Most career platforms answer individual questions:
 
-## 🌐 Live Application
+What should I learn?
 
-**Rolisha is deployed and available at:**
+What skills does a job require?
 
-### 🚀 https://rolisha.in/
+Which projects should I build?
 
-The production application is publicly accessible while the complete source code is available on GitHub.
+Where can I find relevant jobs?
 
-**Source Code:** [github.com/Shashankishere/Rolisha](https://github.com/Shashankishere/Rolisha)
+Rolisha connects these pieces into one workflow.
 
-Keeping the project open-source allows developers and recruiters to explore the implementation while users can experience the deployed application directly.
+Career Goal
+     ↓
+Required Skills
+     ↓
+Current Skill Assessment
+     ↓
+Skill Gap
+     ↓
+Personalized Roadmap
+     ↓
+Learning + Projects
+     ↓
+Assessments
+     ↓
+Progress Tracking
+     ↓
+Real Job Market
 
-> 🔒 Production credentials, API keys, and secrets are kept outside the repository and are configured through secure environment/deployment settings.
 
----
+The goal is simple:
 
-# 💡 Why "Rolisha"?
+Turn a career goal into an actionable path toward becoming job-ready.
 
-**Rolisha** comes from combining two words:
+The name represents the same idea:
 
-> **Role + Disha = Rolisha**
-
-**Role** represents the professional career or job role a learner wants to achieve.
-
-**Disha** (दिशा) is a Sanskrit/Hindi word meaning **direction**, **path**, or **guidance**.
-
-Together:
-
-```text
 Role + Disha
      ↓
   Rolisha
      ↓
 Career Direction
-```
 
-The name represents the core idea behind the platform:
 
-> **Helping learners find a clear direction toward their desired career role.**
+Role represents the professional role a learner wants to achieve.
 
-Instead of simply asking *"What should I learn?"*, Rolisha focuses on:
+Disha (दिशा) means direction, path, or guidance.
 
-```text
-Where do I want to go?
-          ↓
-What skills does that role require?
-          ↓
-What do I already know?
-          ↓
-What should I learn next?
-          ↓
-What should I build?
-          ↓
-How am I progressing?
-          ↓
-What jobs match my preparation?
-```
+Together, Rolisha represents helping learners find a clear direction toward their desired career role.
 
----
+✨ Key Features
+🎯 Personalized Career Roadmaps
 
-# 📸 Screenshots & Demo
+Create a roadmap around factors such as:
 
-> Add your production screenshots to `docs/screenshots/` using the filenames below.
+Target career
 
-### Landing Page
+Current skills
 
-<p align="center">
-  <img src="./docs/screenshots/landing.png" alt="Rolisha Landing Page" width="900">
-</p>
+Education
 
-### Career Roadmap
+Available learning time
 
-<p align="center">
-  <img src="./docs/screenshots/roadmap.png" alt="Rolisha Career Roadmap" width="900">
-</p>
+Target salary
 
-### Dashboard
+Location
 
-<p align="center">
-  <img src="./docs/screenshots/dashboard.png" alt="Rolisha Dashboard" width="900">
-</p>
+🧩 Skill-Gap Analysis
 
-### Job Explorer
+Understand which skills you already have and which skills need to be developed for your target role.
 
-<p align="center">
-  <img src="./docs/screenshots/jobs.png" alt="Rolisha Job Explorer" width="900">
-</p>
+📚 Structured Learning
 
-### 🚀 Try the Live Application
+Follow learning topics as part of the roadmap and track progress as you move through your preparation.
 
-<p align="center">
-  <a href="https://rolisha.in/">
-    <img src="https://img.shields.io/badge/🚀%20Try%20Rolisha-Live%20Application-2563EB?style=for-the-badge" alt="Try Rolisha">
-  </a>
-</p>
+🛠️ Practical Projects
 
----
+Build projects alongside your learning so that knowledge turns into demonstrable work.
 
-# 🎯 What is Rolisha?
+📝 Assessments
 
-Rolisha is a **career planning and learning platform** designed to help students and early-career professionals turn a career goal into a structured, actionable roadmap.
+Use assessments to reinforce concepts and measure progress.
 
-A learner can provide information such as:
+💼 Job-Market Integration
 
-* Education
-* Current skills
-* Target career
-* Available hours per week
-* Target salary
-* Location
+Rolisha integrates job-market data through an Adzuna-powered ingestion and normalization pipeline.
 
-Rolisha uses these inputs to create a structured career path covering relevant skills, learning topics, projects, assessments, and career preparation.
+Job information can include:
 
-The platform also incorporates real job-market data so learners can connect their preparation with requirements found in actual job listings.
+Job title
 
----
+Company
 
-# ✨ Features
+Location
 
-<table>
-<tr>
-<td width="50%">
+Description
 
-## 🎯 Personalized Roadmaps
+Experience requirements
 
-Generate structured career paths based on education, current skills, target role, available time, salary target, and location.
+Work mode
 
-</td>
-<td width="50%">
+Salary information when available
 
-## 🧩 Skill Gap Tracking
+Application URL
 
-Identify skills already known and areas that require additional learning.
+📊 Progress Dashboard
 
-</td>
-</tr>
+Track roadmap progress, skills, learning, projects, assessments, and career preparation from one place.
 
-<tr>
-<td width="50%">
+🔐 Authentication
 
-## 📚 Learning System
+Authentication is handled through Supabase, including protected application routes and Google OAuth.
 
-Follow structured learning topics and track progress throughout the roadmap.
-
-</td>
-<td width="50%">
-
-## 💼 Real Job Data
-
-Explore job-market information through an Adzuna-powered job ingestion and normalization pipeline.
-
-</td>
-</tr>
-
-<tr>
-<td width="50%">
-
-## 🛠️ Projects
-
-Build practical projects alongside learning to turn knowledge into demonstrable work.
-
-</td>
-<td width="50%">
-
-## 📝 Assessments
-
-Complete assessments to reinforce concepts and track learning progress.
-
-</td>
-</tr>
-
-<tr>
-<td width="50%">
-
-## 📊 Progress Dashboard
-
-Monitor roadmaps, skills, learning, projects, assessments, and career preparation from one place.
-
-</td>
-<td width="50%">
-
-## 🔐 Authentication
-
-Secure authentication with Supabase, protected routes, and Google OAuth support.
-
-</td>
-</tr>
-
-<tr>
-<td width="50%">
-
-## 💳 Subscriptions
+💳 Subscriptions
 
 Razorpay-powered subscription infrastructure with server-side verification and feature gating.
 
-</td>
-<td width="50%">
+📱 Responsive Interface
 
-## 📱 Responsive UI
+Designed for both desktop and mobile experiences.
 
-A responsive interface designed for desktop and mobile experiences.
+📸 Product
 
-</td>
-</tr>
-</table>
+Add real production screenshots to docs/screenshots/ before publishing these image references.
 
----
-
-# 🔄 How Rolisha Works
-
-```text
+Landing Page
+<p align="center"> <img src="./docs/screenshots/landing.png" alt="Rolisha landing page" width="900"> </p>
+Career Roadmap
+<p align="center"> <img src="./docs/screenshots/roadmap.png" alt="Rolisha career roadmap" width="900"> </p>
+Dashboard
+<p align="center"> <img src="./docs/screenshots/dashboard.png" alt="Rolisha dashboard" width="900"> </p>
+Job Explorer
+<p align="center"> <img src="./docs/screenshots/jobs.png" alt="Rolisha job explorer" width="900"> </p> <p align="center"> <a href="https://rolisha.in/"> <img src="https://img.shields.io/badge/🚀%20Try%20Rolisha-Live%20Application-2563EB?style=for-the-badge" alt="Try Rolisha"> </a> </p>
+🧭 How It Works
 ┌──────────────────────┐
 │    Create Account    │
 └──────────┬───────────┘
-           │
-           ▼
+           ↓
 ┌──────────────────────┐
-│ Define Career Goal   │
+│   Define Career Goal │
 └──────────┬───────────┘
-           │
-           ▼
+           ↓
 ┌──────────────────────┐
-│ Add Current Skills   │
+│    Add Your Skills   │
 └──────────┬───────────┘
-           │
-           ▼
+           ↓
 ┌──────────────────────┐
-│ Generate Roadmap     │
+│   Generate Roadmap   │
 └──────────┬───────────┘
-           │
-           ▼
+           ↓
 ┌──────────────────────┐
-│ Identify Skill Gaps  │
+│   Identify Skill Gap │
 └──────────┬───────────┘
-           │
-           ▼
-     ┌─────┴─────┐
-     │           │
-     ▼           ▼
-  Learning    Projects
-     │           │
-     └─────┬─────┘
-           │
-           ▼
+           ↓
+      ┌────┴────┐
+      ↓         ↓
+  Learning   Projects
+      └────┬────┘
+           ↓
       Assessments
-           │
-           ▼
+           ↓
     Track Progress
-           │
-           ▼
-    Explore Jobs
-```
+           ↓
+     Explore Jobs
 
----
+🏗️ Architecture
 
-# 🏗️ Architecture
+Rolisha uses a full-stack TypeScript architecture built around TanStack Start, React, Supabase, and external service integrations.
 
-Rolisha follows a full-stack TypeScript architecture built around TanStack Start, Supabase, and external service integrations.
-
-```text
-                              ┌─────────────────┐
-                              │      User       │
-                              └────────┬────────┘
-                                       │
-                                       ▼
-                         ┌──────────────────────────┐
-                         │        React UI          │
-                         │   Tailwind + shadcn/ui   │
-                         └────────────┬─────────────┘
-                                      │
-                                      ▼
-                         ┌──────────────────────────┐
-                         │     TanStack Router      │
-                         │      TanStack Query      │
-                         └────────────┬─────────────┘
-                                      │
-                                      ▼
-                         ┌──────────────────────────┐
-                         │     TanStack Start       │
-                         │     Server Functions     │
-                         │          SSR             │
-                         └────────────┬─────────────┘
-                                      │
-             ┌────────────────────────┼─────────────────────────┐
-             │                        │                         │
-             ▼                        ▼                         ▼
-     ┌───────────────┐       ┌────────────────┐       ┌────────────────┐
-     │   Supabase    │       │     Adzuna     │       │    Razorpay    │
-     │               │       │                │       │                │
-     │ PostgreSQL    │       │ Job Data       │       │ Subscriptions  │
-     │ Auth          │       │ Ingestion       │       │ Payments       │
-     │ RLS           │       │ Normalization   │       │ Verification   │
-     └───────┬───────┘       └────────────────┘       └────────────────┘
+                         ┌─────────────────┐
+                         │      User       │
+                         └────────┬────────┘
+                                  │
+                                  ▼
+                    ┌─────────────────────────┐
+                    │       React UI          │
+                    │  Tailwind + shadcn/ui   │
+                    └───────────┬─────────────┘
+                                │
+                                ▼
+                    ┌─────────────────────────┐
+                    │    TanStack Router      │
+                    │     TanStack Query      │
+                    └───────────┬─────────────┘
+                                │
+                                ▼
+                    ┌─────────────────────────┐
+                    │     TanStack Start      │
+                    │ Server Functions + SSR  │
+                    └───────────┬─────────────┘
+                                │
+             ┌──────────────────┼──────────────────┐
+             │                  │                  │
+             ▼                  ▼                  ▼
+      ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+      │  Supabase   │    │   Adzuna    │    │  Razorpay   │
+      │             │    │             │    │             │
+      │ PostgreSQL  │    │ Job Data    │    │ Payments    │
+      │ Auth        │    │ Ingestion   │    │ Subscriptions│
+      │ RLS         │    │ Normalize   │    │ Verification│
+      └──────┬──────┘    └─────────────┘    └─────────────┘
              │
              ▼
-     ┌────────────────────┐
-     │   Career Data      │
-     │                    │
-     │ Roadmaps           │
-     │ Skills             │
-     │ Learning           │
-     │ Projects           │
-     │ Assessments        │
-     │ Progress           │
-     └────────────────────┘
-```
+      ┌──────────────────┐
+      │   Career Data    │
+      │                  │
+      │ Roadmaps         │
+      │ Skills           │
+      │ Learning         │
+      │ Projects         │
+      │ Assessments      │
+      │ Progress         │
+      └──────────────────┘
 
----
+💼 Job Data Pipeline
 
-# 💼 Job Data Pipeline
+Job-market data is processed before being surfaced in the application.
 
-Rolisha processes job-market data through an ingestion and normalization pipeline.
+┌──────────────┐
+│    Adzuna    │
+└──────┬───────┘
+       ↓
+┌──────────────┐
+│   Job API    │
+│     Data     │
+└──────┬───────┘
+       ↓
+┌──────────────┐
+│  Normalize   │
+│  Job Data    │
+└──────┬───────┘
+       ↓
+┌──────────────┐
+│  Structured  │
+│  Job Record  │
+└──────┬───────┘
+       ↓
+┌──────────────────────┐
+│      Rolisha UI      │
+└──────────────────────┘
 
-```text
-                    ┌──────────────┐
-                    │    Adzuna    │
-                    └──────┬───────┘
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │ API Job Data    │
-                  └────────┬────────┘
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │   Normalize     │
-                  │   Job Data      │
-                  └────────┬────────┘
-                           │
-                           ▼
-                  ┌─────────────────┐
-                  │ Structured Job  │
-                  │     Record      │
-                  └────────┬────────┘
-                           │
-                    ┌──────┴──────┐
-                    ▼             ▼
-             Job Listings    Job Details
-                    │             │
-                    └──────┬──────┘
-                           ▼
-                    Rolisha UI
-```
 
-Normalized job information can include:
+This normalization layer allows external job data to be represented consistently inside the application.
 
-* Job title
-* Company
-* Location
-* Description
-* Experience
-* Work mode
-* Salary information where available
-* Application URL
-
----
-
-# 🛠️ Tech Stack
-
-### Frontend
-
-| Technology   | Purpose                |
-| ------------ | ---------------------- |
-| React        | User interface         |
-| TypeScript   | Type-safe development  |
-| Tailwind CSS | Styling                |
-| shadcn/ui    | Reusable UI components |
-
-### Full-Stack Framework
-
-| Technology      | Purpose                          |
-| --------------- | -------------------------------- |
-| TanStack Start  | Full-stack React framework / SSR |
-| TanStack Router | File-based routing               |
-| TanStack Query  | Server-state management          |
-| Vite            | Development and build tooling    |
-
-### Backend & Database
-
-| Technology         | Purpose                       |
-| ------------------ | ----------------------------- |
-| Supabase           | Backend platform              |
-| PostgreSQL         | Relational database           |
-| Supabase Auth      | Authentication                |
-| Row Level Security | Database access control       |
-| Server Functions   | Server-side application logic |
-| Zod                | Runtime validation            |
-
-### External Integrations
-
-| Service      | Purpose               |
-| ------------ | --------------------- |
-| Adzuna       | Job-market data       |
-| Razorpay     | Subscription payments |
-| Google OAuth | Authentication        |
-
-### Testing & Deployment
-
-| Technology | Purpose               |
-| ---------- | --------------------- |
-| Vitest     | Automated testing     |
-| ESLint     | Code quality          |
-| TypeScript | Static type checking  |
-| Cloudflare | Production hosting    |
-| Wrangler   | Cloudflare deployment |
-
----
-
-# 📂 Project Structure
-
-```text
+🛠️ Tech Stack
+Frontend
+Technology	Purpose
+React	User interface
+TypeScript	Type-safe development
+Tailwind CSS	Styling
+shadcn/ui	Reusable UI components
+Application
+Technology	Purpose
+TanStack Start	Full-stack React framework
+TanStack Router	Application routing
+TanStack Query	Server-state management
+Vite	Development and build tooling
+Zod	Runtime validation
+Backend & Database
+Technology	Purpose
+Supabase	Backend platform
+PostgreSQL	Relational database
+Supabase Auth	Authentication
+Row Level Security	Database access control
+Server Functions	Server-side application logic
+External Services
+Service	Purpose
+Adzuna	Job-market data
+Razorpay	Subscription payments
+Google OAuth	Authentication
+Testing & Deployment
+Technology	Purpose
+Vitest	Automated testing
+ESLint	Code quality
+TypeScript	Static type checking
+Cloudflare	Production hosting
+Wrangler	Deployment
+📂 Project Structure
 Rolisha/
-│
 ├── src/
-│   ├── components/
-│   │   └── ...                    # Reusable UI components
-│   │
+│   ├── components/          # Reusable UI components
 │   ├── lib/
-│   │   ├── auth/
-│   │   │   └── ...                # Authentication
-│   │   │
-│   │   ├── jobs/
-│   │   │   ├── description.ts     # Job description processing
-│   │   │   ├── normalize.ts       # Job normalization
-│   │   │   └── ...                # Job ingestion
-│   │   │
-│   │   ├── payments/
-│   │   │   └── ...                # Razorpay integration
-│   │   │
-│   │   └── ...                    # Core application logic
-│   │
+│   │   ├── auth/            # Authentication
+│   │   ├── jobs/            # Job ingestion & normalization
+│   │   ├── payments/        # Razorpay integration
+│   │   └── ...              # Application logic
 │   └── routes/
-│       ├── _authenticated/
-│       │   └── ...                 # Protected routes
+│       ├── _authenticated/  # Protected routes
 │       └── ...
 │
+├── server/
+│   └── tasks/               # Server-side tasks
+│
 ├── supabase/
-│   └── migrations/                 # Database migrations
+│   └── migrations/          # Database migrations
 │
-├── public/                         # Static assets
-├── docs/                           # Documentation & screenshots
+├── public/                  # Static assets
+├── docs/                    # Documentation & screenshots
 │
-├── .env.example                    # Environment template
+├── .env.example
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
+├── vitest.config.ts
 └── wrangler.jsonc
-```
 
----
+🚀 Getting Started
+Prerequisites
 
-# 🚀 Getting Started
+Node.js
 
-## Prerequisites
+npm
 
-You need:
+Git
 
-* Node.js
-* npm
-* Git
-* A Supabase project
-* Required third-party API credentials
+A Supabase project
 
----
+Required third-party API credentials
 
-## 1. Clone the repository
-
-```bash
+1. Clone the repository
 git clone https://github.com/Shashankishere/Rolisha.git
 cd Rolisha
-```
 
----
-
-## 2. Install dependencies
-
-```bash
+2. Install dependencies
 npm install
-```
 
----
-
-## 3. Configure environment variables
-
-Create your local environment file using the repository template:
-
-```bash
+3. Configure environment variables
 cp .env.example .env
-```
 
-Configure the required Supabase, authentication, Adzuna, Razorpay, and application variables.
 
-> Never commit `.env` or production credentials.
+Configure the required application, Supabase, Adzuna, authentication, and Razorpay variables.
 
----
+Never commit .env or production credentials.
 
-## 4. Start the development server
-
-```bash
+4. Start development
 npm run dev
-```
 
-Open the local URL displayed by the development server.
 
----
+Open the local URL provided by the development server.
 
-# 🧪 Testing
+🧪 Testing & Validation
 
-Rolisha uses automated testing and static validation to protect application behavior.
+Run the test suite:
 
-### Full test suite
-
-```bash
 npm test
-```
 
-### TypeScript validation
 
-```bash
+Run TypeScript validation:
+
 npx tsc --noEmit
-```
 
-### Production build
 
-```bash
+Create a production build:
+
 npm run build
-```
 
-### Git diff validation
 
-```bash
+Check for whitespace errors:
+
 git diff --check
-```
 
-### Recommended pre-deployment checks
 
-```bash
+Recommended validation before deployment:
+
 npm test
 npx tsc --noEmit
 npm run build
 git diff --check
-```
 
----
+🔐 Security
 
-# 🔐 Security
+Rolisha uses several layers of application security:
 
-Rolisha uses multiple layers of security:
+Supabase Authentication
 
-* Supabase Authentication
-* PostgreSQL Row Level Security
-* Protected authenticated routes
-* Server-side authorization
-* Zod input validation
-* Server-side payment verification
-* Secure environment variables
-* Subscription/webhook synchronization
+PostgreSQL Row Level Security
 
-Production secrets should never be stored in the Git repository.
+Protected routes
 
----
+Server-side authorization
 
-# 💳 Payment System
+Zod input validation
+
+Server-side payment verification
+
+Secure environment variables
+
+Subscription/webhook synchronization
+
+Production secrets are not stored in the repository.
+
+💳 Payments
 
 Rolisha uses Razorpay for subscription payments.
 
-Payment-sensitive operations are handled server-side and subscription/payment information is verified before updating application state.
+Payment-sensitive operations are handled server-side, with verification performed before updating subscription-related application state.
 
-The current customer-facing pricing flow is configured for:
+The current customer-facing payment flow is configured for:
 
-```text
 Region   → India
 Currency → INR (₹)
-```
 
-Payment credentials and account configuration are managed outside the public repository.
 
----
+Payment credentials are managed outside the repository.
 
-# ☁️ Deployment
+☁️ Deployment
 
-Rolisha is deployed using **Cloudflare** with **Wrangler**.
+Rolisha is deployed to Cloudflare using Wrangler.
 
-## Cloudflare authentication
+Authenticate with Cloudflare:
 
-```bash
 npx wrangler login
-```
 
-## Production build
 
-```bash
+Build the application:
+
 npm run build
-```
 
-## Deploy
 
-```bash
-npx wrangler deploy
-```
-
-### Production URL
-
-**https://rolisha.in/**
-
----
-
-# 🔄 Production Release Workflow
-
-A typical production release follows:
-
-```text
-Code Change
-    ↓
-Run Tests
-    ↓
-TypeScript Check
-    ↓
-Production Build
-    ↓
-Review Git Diff
-    ↓
-Commit
-    ↓
-Push to GitHub
-    ↓
-Deploy with Wrangler
-    ↓
-Verify Production
-```
-
-Recommended commands:
-
-```bash
-git status
-git fetch origin
-git pull --rebase origin main
-
-npm test
-npx tsc --noEmit
-npm run build
-git diff --check
-
-git add .
-git commit -m "describe your change"
-git push origin main
+Deploy:
 
 npx wrangler deploy
-```
 
-> Review `git status` and `git diff` before using `git add .` if unrelated changes are present.
+Production
 
----
+https://rolisha.in/
 
-# 🗄️ Database Migrations
+🗄️ Database Migrations
 
-Database changes are managed through Supabase migrations.
+Database changes are managed through Supabase migrations:
 
-Migration files are located at:
-
-```text
 supabase/migrations/
-```
 
-When deploying database-related changes, ensure the required migrations have been applied to the target Supabase environment before depending on the new schema or data.
 
----
+When deploying schema changes, ensure the required migrations have been applied to the target Supabase environment.
 
-# 🌱 Product Vision
+🗺️ Roadmap
 
-Career planning often separates several different activities:
+Planned areas of development include:
 
-```text
-Career Advice
-      +
-Learning Resources
-      +
-Projects
-      +
-Assessments
-      +
-Job Searching
-```
+Expanding supported career paths
 
-Rolisha connects these into a single workflow:
+Improving job-market insights
 
-```text
-Career Goal
-     ↓
-Required Skills
-     ↓
-Skill Gap
-     ↓
-Learning
-     ↓
-Projects
-     ↓
-Assessments
-     ↓
-Progress
-     ↓
-Real Job Market
-```
+Expanding learning content
 
-The goal is to give learners a clearer and more actionable path from **career intention to career preparation**.
+Improving skill recommendations
 
----
+Enhancing progress analytics
 
-# 🗺️ Future Development
+Expanding career-preparation workflows
 
-Areas for continued development include:
-
-* Expanding supported career paths
-* Improving job-market insights
-* Expanding learning content
-* Improving skill recommendations
-* Enhancing progress analytics
-* Expanding career preparation workflows
-
----
-
-# 🤝 Contributing
+🤝 Contributing
 
 Contributions, suggestions, and bug reports are welcome.
 
-### Development workflow
+Development workflow
 
-1. Fork the repository.
-2. Create a feature branch.
+Fork the repository.
 
-```bash
+Create a feature branch:
+
 git checkout -b feature/your-feature
-```
 
-3. Make your changes.
-4. Add or update tests.
-5. Run the validation suite.
 
-```bash
+Make your changes.
+
+Add or update tests.
+
+Run the validation suite:
+
 npm test
 npx tsc --noEmit
 npm run build
-```
 
-6. Commit your changes.
 
-```bash
+Commit your changes:
+
 git commit -m "feat: describe your change"
-```
 
-7. Push your branch and open a pull request.
 
----
+Push your branch and open a pull request.
 
-# 👨‍💻 Author
+👨‍💻 Author
+Shashank Kumar Mishra
 
-## Shashank Kumar Mishra
+Full-stack developer building products around AI, career development, and real-world data.
 
-**Computer Science Student • Full Stack Developer • AI & Software Enthusiast**
+<p align="center"> <a href="https://github.com/Shashankishere"> <img src="https://img.shields.io/badge/GitHub-Shashankishere-181717?style=for-the-badge&logo=github" alt="GitHub"> </a> <a href="https://rolisha.in/"> <img src="https://img.shields.io/badge/Rolisha-2563EB?style=for-the-badge" alt="Rolisha"> </a> </p>
+📄 License
 
-Building ideas into real products.
+See LICENSE for the applicable license and usage terms.
 
-<p align="center">
-  <a href="https://github.com/Shashankishere">
-    <img src="https://img.shields.io/badge/GitHub-Shashankishere-181717?style=for-the-badge&logo=github" alt="GitHub">
-  </a>
-  <a href="https://rolisha.in/">
-    <img src="https://img.shields.io/badge/Website-Rolisha-2563EB?style=for-the-badge" alt="Rolisha Website">
-  </a>
-</p>
-
----
-
-# 📄 License
-
-Please refer to the repository's license file for the applicable usage and distribution terms.
-
----
-
-<p align="center">
-  <strong>Rolisha</strong><br>
-  <em>Role + Disha — Direction toward your desired career role.</em>
-  <br><br>
-  <a href="https://rolisha.in/">🚀 Visit Rolisha</a>
-  &nbsp; • &nbsp;
-  <a href="https://github.com/Shashankishere/Rolisha">💻 View Source</a>
-</p>
+<p align="center"> <strong>Rolisha</strong><br> <em>Role + Disha — a clearer direction toward your desired career.</em> <br><br> <a href="https://rolisha.in/">🚀 Visit Rolisha</a> &nbsp; • &nbsp; <a href="https://github.com/Shashankishere/Rolisha">💻 View Source</a> </p>
